@@ -7,7 +7,7 @@ export type PlayerMode = '1p' | '2p';
 
 export type EnemyTheme = 'bitcoin';
 
-export type EnemyVisualType = 'beetle' | 'wasp' | 'fly' | 'zombie_walker' | 'zombie_runner' | 'spider_crawler' | 'spider_jumper' | 'eth' | 'usdt' | 'usdc' | 'bnb' | 'sol' | 'xrp' | 'trx' | 'doge' | 'ada' | 'steth' | 'link' | 'shib' | 'hbar' | 'dai' | 'avax' | 'uni' | 'aave' | 'comp' | 'zec' | 'etc';
+export type EnemyVisualType = 'eth' | 'usdt' | 'usdc' | 'bnb' | 'sol' | 'xrp' | 'trx' | 'doge' | 'ada' | 'steth' | 'link' | 'shib' | 'hbar' | 'dai' | 'avax' | 'uni' | 'aave' | 'comp' | 'zec' | 'etc';
 
 export type Enemy = {
   id: string;

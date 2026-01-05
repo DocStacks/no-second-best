@@ -2,15 +2,15 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GameEngine } from './components/GameEngine';
 import { GameStatus, EnemyTheme, PlayerMode } from './types';
 import { initializeVisionModels } from './services/visionService';
-import { Heart, Play, Loader2, Video, Pause, PlayCircle, User, Users, RotateCcw, Copy, Check, Download } from 'lucide-react';
+import { Heart, Play, Loader2, Video, Pause, PlayCircle, User, RotateCcw, Copy, Check, Download } from 'lucide-react';
 import { MAX_LIVES } from './constants';
 
 const GAME_OVER_CTAS = [
-  "Think you can survive longer than me?",
-  "Just dominated AR bugs! Your turn to shine!",
-  "The swarm is evolving... can you keep up?",
-  "Challenge accepted? Prove your AR skills!",
-  "Beat my score or forever hold your peace!"
+  "THERE IS NO SECOND BEST",
+  "BITCOIN IS THE BEST TREASURY RESERVE ASSET",
+  "BITCOIN IS DIGITAL GOLD",
+  "THERE IS ONLY ONE BITCOIN",
+  "BITCOIN IS THE BEST FORM OF MONEY"
 ];
 
 const GAME_URL = window.location.host; // Dynamically get the current URL
@@ -18,7 +18,7 @@ const GAME_URL = window.location.host; // Dynamically get the current URL
 export default function App() {
   const [status, setStatus] = useState<GameStatus>(GameStatus.LANDING);
   const theme: EnemyTheme = 'bitcoin';
-  const [playerMode, setPlayerMode] = useState<PlayerMode>('1p');
+  const playerMode: PlayerMode = '1p';
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState<number[]>([MAX_LIVES]);
   const [highScore, setHighScore] = useState(0);
@@ -28,9 +28,24 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [ctaText, setCtaText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+      setIsMobile(mobile);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
-    const stored = localStorage.getItem('bug-swat-highscore');
+    const stored = localStorage.getItem('bitcoin-ar-highscore');
     if (stored) setHighScore(parseInt(stored, 10));
   }, []);
 
@@ -78,7 +93,7 @@ export default function App() {
 
     setHighScore(prev => {
         if (finalScore > prev) {
-            localStorage.setItem('bug-swat-highscore', finalScore.toString());
+            localStorage.setItem('bitcoin-ar-highscore', finalScore.toString());
             return finalScore;
         }
         return prev;
@@ -103,38 +118,85 @@ export default function App() {
         // 1. Draw Base Image
         ctx.drawImage(img, 0, 0);
 
-        // 2. Draw Vignette/Gradient for text readability
-        const gradient = ctx.createLinearGradient(0, canvas.height * 0.6, 0, canvas.height);
+        // 2. Draw Enhanced Vignette with dual gradient
+        const gradient = ctx.createLinearGradient(0, canvas.height * 0.5, 0, canvas.height);
         gradient.addColorStop(0, 'rgba(0,0,0,0)');
-        gradient.addColorStop(0.5, 'rgba(0,0,0,0.6)');
-        gradient.addColorStop(1, 'rgba(0,0,0,0.9)');
+        gradient.addColorStop(0.4, 'rgba(0,0,0,0.3)');
+        gradient.addColorStop(0.8, 'rgba(0,0,0,0.8)');
+        gradient.addColorStop(1, 'rgba(0,0,0,0.95)');
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // 3. Draw Top CTA Text
+        // Add top gradient for CTA text
+        const topGradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.3);
+        topGradient.addColorStop(0, 'rgba(0,0,0,0.7)');
+        topGradient.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = topGradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height * 0.3);
+
+        // 3. Draw Top CTA Text with better styling
         ctx.save();
-        ctx.shadowColor = 'black';
-        ctx.shadowBlur = 10;
-        ctx.font = 'bold 48px Roboto, sans-serif';
-        ctx.fillStyle = '#ef4444'; // Red-500
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 20;
+        ctx.shadowOffsetY = 4;
+        
+        // Wrap text if too long
+        const maxWidth = canvas.width - 80;
+        const words = ctaText.toUpperCase().split(' ');
+        let line = '';
+        let y = 60;
+        const lineHeight = 52;
+        
+        ctx.font = 'bold 46px Roboto, sans-serif';
+        ctx.fillStyle = '#f97316'; // Orange-500
         ctx.textAlign = 'center';
-        ctx.fillText(ctaText.toUpperCase(), canvas.width / 2, 80);
+        
+        for (let i = 0; i < words.length; i++) {
+          const testLine = line + words[i] + ' ';
+          const metrics = ctx.measureText(testLine);
+          if (metrics.width > maxWidth && i > 0) {
+            ctx.fillText(line.trim(), canvas.width / 2, y);
+            line = words[i] + ' ';
+            y += lineHeight;
+          } else {
+            line = testLine;
+          }
+        }
+        ctx.fillText(line.trim(), canvas.width / 2, y);
         ctx.restore();
 
-        // 4. Draw Score (Bottom Left)
+        // 4. Draw Score Box (Bottom Left) - Enhanced
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 15;
+        
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 32px Roboto, sans-serif';
+        ctx.font = 'bold 28px Roboto, sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText('SCORE', 40, canvas.height - 80);
-        ctx.font = '900 72px Roboto, sans-serif';
-        ctx.fillStyle = '#10b981'; // Emerald-500
-        ctx.fillText(score.toString(), 36, canvas.height - 25);
+        ctx.fillText('SCORE', 40, canvas.height - 100);
+        
+        // Orange glow for score number
+        ctx.shadowColor = '#f97316';
+        ctx.shadowBlur = 20;
+        ctx.font = '900 80px Roboto, sans-serif';
+        ctx.fillStyle = '#fb923c'; // Orange-400
+        ctx.fillText(score.toString(), 36, canvas.height - 30);
+        ctx.restore();
 
-        // 5. Draw Watermark URL (Bottom Right)
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-        ctx.font = '24px Roboto, sans-serif';
+        // 5. Draw Enhanced Watermark (Bottom Right)
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 10;
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.font = '20px Roboto, sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(`Join the Fight at: ${GAME_URL}`, canvas.width - 40, canvas.height - 40);
+        ctx.fillText('Play at:', canvas.width - 40, canvas.height - 60);
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.font = 'bold 26px Roboto, sans-serif';
+        ctx.fillText(GAME_URL, canvas.width - 40, canvas.height - 30);
+        ctx.restore();
 
         canvas.toBlob((blob) => {
           resolve(blob);
@@ -156,13 +218,21 @@ export default function App() {
         // We try to write both text and image. Support varies by browser.
         const items: Record<string, Blob> = {};
         items['image/png'] = blob;
-        const textBlob = new Blob([`Beat my score of ${score} in AR Shooter! Play here: ${window.location.href}`], { type: 'text/plain' });
+        
+        // Generate compelling share text
+        const shareText = score > 500 
+          ? `🔥 INSANE ${score} POINTS! Can you beat me at this Bitcoin AR game? ${window.location.href}`
+          : score > 300
+          ? `Just scored ${score} defending Bitcoin! 💪 Think you can beat me? ${window.location.href}`
+          : `There is NO SECOND BEST! ₿ Scored ${score} points - your turn! ${window.location.href}`;
+        
+        const textBlob = new Blob([shareText], { type: 'text/plain' });
         items['text/plain'] = textBlob;
 
         await navigator.clipboard.write([new ClipboardItem(items)]);
 
         setCopied(true);
-        setTimeout(() => setCopied(false), 3000);
+        setTimeout(() => setCopied(false), 5000);
       }
     } catch (err) {
       console.error("Clipboard write failed", err);
@@ -170,7 +240,7 @@ export default function App() {
       if (screenshots[selectedScreenshotIdx]) {
          const link = document.createElement('a');
          link.href = screenshots[selectedScreenshotIdx];
-         link.download = `bug-swat-${Date.now()}.jpg`;
+         link.download = `bitcoin-ar-${Date.now()}.jpg`;
          link.click();
          alert("Could not copy to clipboard (browser restriction). Saved image instead!");
       }
@@ -179,33 +249,34 @@ export default function App() {
     }
   };
 
-  // Generate share message options
-  const shareMessages = theme === 'bitcoin' ? [
+  // Generate share message options - Bitcoin themed
+  const shareMessages = [
     `Just scored ${score} points defending Bitcoin from altcoins! ₿⚡ Can you beat me?`,
     `Bitcoin hero! ${score} points shooting altcoins - think you can do better? 🎯`,
     `HODLing and shooting! ${score} points in Bitcoin AR Shooter. Your turn! ₿`,
     `There is no second best! ${score} points protecting the king of crypto! 👑`
-  ] : [
-    `Just scored ${score} points swatting bugs with AR! Can you beat me? 🐛`,
-    `AR Shooter champion here! ${score} points - think you can do better? 🎯`,
-    `Finger guns out, bugs down! ${score} points in AR Shooter. Your turn! 👆`,
-    `Reality check: ${score} points shooting virtual bugs. Beat that! 🌟`
   ];
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 font-sans select-none">
+    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-3 md:p-4 font-sans select-none">
       {/* Header */}
-      <header className="mb-4 text-center">
-        <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-600 tracking-tight">
+      <header className="mb-3 md:mb-4 text-center px-4">
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-600 tracking-tight drop-shadow-lg">
           NO SECOND BEST
         </h1>
-        <p className="text-slate-400 mt-2 text-sm md:text-base">
-          Bitcoin AR Battle • Shoot altcoins • Eat ₿ with your mouth!
+        <p className="text-slate-400 mt-2 text-xs md:text-sm lg:text-base">
+          Bitcoin AR Battle • Shoot altcoins • Eat all the ₿!
         </p>
+        {highScore > 0 && status === GameStatus.LANDING && (
+          <div className="mt-2 md:mt-3 inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-slate-800 border border-slate-700 rounded-full">
+            <span className="text-slate-400 text-[10px] md:text-xs">High Score:</span>
+            <span className="text-orange-400 font-black text-base md:text-lg">{highScore}</span>
+          </div>
+        )}
       </header>
 
       {/* Main Game Container */}
-      <div className="relative w-full max-w-4xl aspect-video bg-black rounded-xl shadow-2xl overflow-hidden ring-1 ring-slate-700">
+      <div className="relative w-full max-w-4xl min-h-[70vh] md:min-h-0 md:aspect-video bg-black rounded-xl shadow-2xl overflow-hidden ring-1 ring-slate-700">
         
         <GameEngine 
           status={status}
@@ -223,84 +294,90 @@ export default function App() {
         {(status === GameStatus.PLAYING || status === GameStatus.PAUSED) && (
             <button 
               onClick={togglePause}
-              className="absolute bottom-6 right-6 z-30 p-3 bg-slate-900/50 hover:bg-slate-800 text-white rounded-full transition-colors backdrop-blur-sm border border-white/10"
+              className="absolute bottom-4 right-4 md:bottom-6 md:right-6 z-30 p-2 md:p-3 bg-slate-900/50 hover:bg-slate-800 text-white rounded-full transition-colors backdrop-blur-sm border border-white/10"
               title="Pause Game"
             >
-              {status === GameStatus.PAUSED ? <PlayCircle className="w-8 h-8" /> : <Pause className="w-8 h-8" />}
+              {status === GameStatus.PAUSED ? <PlayCircle className="w-6 h-6 md:w-8 md:h-8" /> : <Pause className="w-6 h-6 md:w-8 md:h-8" />}
             </button>
         )}
 
         {/* 1. Landing Screen */}
         {status === GameStatus.LANDING && (
-          <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm flex flex-col items-center justify-center z-10 p-6 text-center animate-in fade-in duration-500">
-             <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
-                <Video className="w-10 h-10 text-emerald-400" />
-             </div>
-             <h2 className="text-2xl font-bold text-white mb-2">Ready to play?</h2>
-             
-             <div className="flex flex-col gap-4 mb-8">
-                {/* Player Mode */}
-                <div className="flex gap-2 bg-slate-800 p-1 rounded-lg justify-center">
-                   <button
-                     onClick={() => setPlayerMode('1p')}
-                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-colors ${playerMode === '1p' ? 'bg-orange-500 text-slate-900' : 'text-slate-400 hover:text-white'}`}
-                   >
-                     <User className="w-4 h-4"/> 1 Player
-                   </button>
-                   <button
-                     onClick={() => setPlayerMode('2p')}
-                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-colors ${playerMode === '2p' ? 'bg-orange-500 text-slate-900' : 'text-slate-400 hover:text-white'}`}
-                   >
-                     <Users className="w-4 h-4"/> 2 Players
-                   </button>
-                </div>
-             </div>
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 via-slate-900/90 to-slate-800/95 backdrop-blur-md flex flex-col items-center justify-center z-10 py-4 px-3 md:p-6 text-center animate-in fade-in duration-500 overflow-y-auto">
+             <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto">
+               <div className="w-12 h-12 md:w-24 md:h-24 bg-gradient-to-br from-orange-500/30 to-amber-500/20 rounded-full flex items-center justify-center mb-2 md:mb-6 animate-pulse shadow-lg shadow-orange-500/20 flex-shrink-0">
+                  <Video className="w-6 h-6 md:w-12 md:h-12 text-orange-400" />
+               </div>
+               <h2 className="text-xl md:text-3xl font-black text-white mb-1 md:mb-2">Ready to Defend Bitcoin?</h2>
+               <p className="text-slate-400 text-[11px] md:text-sm mb-2 md:mb-6">Use your hands and face in this AR experience</p>
 
-             <ul className="text-slate-300 text-left space-y-3 mb-8 max-w-sm text-sm">
-                <li className="flex items-center gap-2"><div className="w-2 h-2 bg-orange-400 rounded-full"/> Allow camera access to begin.</li>
-                <li className="flex items-center gap-2"><div className="w-2 h-2 bg-orange-400 rounded-full"/> Use BOTH hands to shoot altcoins.</li>
-                <li className="flex items-center gap-2"><div className="w-2 h-2 bg-amber-400 rounded-full"/> Open your mouth to eat ₿ power-ups!</li>
-                {playerMode === '2p' && (
-                    <li className="flex items-center gap-2"><div className="w-2 h-2 bg-orange-400 rounded-full"/> P1 Left, P2 Right: Protect your Bitcoin!</li>
-                )}
-             </ul>
-             <button
-               onClick={handleStartRequest}
-               className="group relative px-8 py-4 bg-orange-500 hover:bg-amber-500 text-slate-900 font-black rounded-full text-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/25 flex items-center gap-2"
-             >
-               START GAME
-               <Play className="w-5 h-5 fill-current" />
-             </button>
+               {/* Mobile-specific instructions */}
+               {isMobile && (
+                 <div className="mb-2 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-lg p-2 w-full">
+                   <p className="text-blue-300 text-[10px] font-semibold mb-0.5">📱 Mobile Setup</p>
+                   <p className="text-slate-300 text-[10px] leading-tight">
+                     <strong className="text-white">Set phone down</strong> at eye level, step back 2-3 feet!
+                   </p>
+                 </div>
+               )}
+
+               <ul className="text-slate-300 text-left space-y-1 md:space-y-3 mb-3 md:mb-8 w-full text-[11px] md:text-sm bg-slate-800/50 border border-slate-700/50 rounded-lg md:rounded-xl p-2.5 md:p-5 backdrop-blur-sm">
+                  <li className="flex items-center gap-2 md:gap-3">
+                    <div className="w-6 h-6 md:w-8 md:h-8 bg-orange-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-orange-400 font-bold text-[10px] md:text-xs">1</span>
+                    </div>
+                    <span><strong className="text-white">Allow camera</strong> access</span>
+                  </li>
+                  <li className="flex items-center gap-2 md:gap-3">
+                    <div className="w-6 h-6 md:w-8 md:h-8 bg-orange-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-orange-400 font-bold text-[10px] md:text-xs">2</span>
+                    </div>
+                    <span>Use <strong className="text-white">both hands</strong> to shoot</span>
+                  </li>
+                  <li className="flex items-center gap-2 md:gap-3">
+                    <div className="w-6 h-6 md:w-8 md:h-8 bg-amber-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-amber-400 font-bold text-[10px] md:text-xs">3</span>
+                    </div>
+                    <span><strong className="text-white">Eat all the ₿</strong> for power!</span>
+                  </li>
+               </ul>
+               <button
+                 onClick={handleStartRequest}
+                 className="group relative px-8 py-3 md:px-10 md:py-5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black rounded-xl md:rounded-2xl text-base md:text-xl transition-all hover:scale-105 active:scale-95 shadow-xl shadow-orange-500/30 flex items-center gap-2 md:gap-3 w-full md:w-auto justify-center flex-shrink-0"
+               >
+                 <span>START GAME</span>
+                 <Play className="w-4 h-4 md:w-6 md:h-6 fill-current group-hover:translate-x-1 transition-transform" />
+               </button>
+             </div>
           </div>
         )}
 
         {/* 2. Loading Screen */}
         {status === GameStatus.LOADING_MODELS && (
           <div className="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center z-10">
-            <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mb-4" />
-            <p className="text-emerald-400 font-mono text-lg">Initializing AI Vision...</p>
+            <Loader2 className="w-12 h-12 text-orange-500 animate-spin mb-4" />
+            <p className="text-orange-400 font-mono text-lg">Initializing AI Vision...</p>
           </div>
         )}
 
         {/* 3. Calibration / Ready Screen */}
         {status === GameStatus.CALIBRATING && (
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center z-10">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center z-10 p-4">
              {!cameraReady ? (
                <div className="flex flex-col items-center">
-                 <Loader2 className="w-10 h-10 text-white animate-spin mb-2" />
-                 <p className="text-white">Starting Camera...</p>
+                 <Loader2 className="w-10 h-10 text-orange-400 animate-spin mb-2" />
+                 <p className="text-orange-400 text-sm md:text-base">Starting Camera...</p>
                </div>
              ) : (
                <div className="text-center animate-in fade-in zoom-in duration-300">
-                 <div className="bg-black/50 p-6 rounded-2xl border border-white/10">
-                   <h3 className="text-2xl font-bold text-white mb-2">Setup Check</h3>
-                   <p className="text-slate-300 mb-6">
-                       {playerMode === '2p' ? "Both players get in frame!" : "Center your face."}
-                       <br/>Raise your index fingers.
+                 <div className="bg-black/50 p-5 md:p-6 rounded-2xl border border-white/10 max-w-md mx-auto">
+                   <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Setup Check</h3>
+                   <p className="text-slate-300 text-sm md:text-base mb-4 md:mb-6">
+                       {isMobile ? 'Step back 2-3 feet, face the camera, and raise your index fingers.' : 'Center your face and raise your index fingers.'}
                    </p>
-                   <button 
+                   <button
                      onClick={startGame}
-                     className="px-8 py-3 bg-white hover:bg-slate-200 text-slate-900 font-bold rounded-full transition-colors text-lg"
+                     className="px-6 py-3 md:px-8 md:py-3 bg-orange-500 hover:bg-amber-500 text-slate-900 font-bold rounded-full transition-colors text-base md:text-lg"
                    >
                      I'm Ready!
                    </button>
@@ -312,63 +389,48 @@ export default function App() {
 
         {/* 4. HUD (Playing) */}
         {(status === GameStatus.PLAYING || status === GameStatus.PAUSED) && (
-          <div className="absolute inset-0 pointer-events-none p-4 flex flex-col justify-between">
+          <div className="absolute inset-0 pointer-events-none p-2 md:p-4 flex flex-col justify-between">
             
-            {/* Top Bar: Lives */}
+            {/* Top Bar: Lives and Score */}
             <div className="flex justify-between items-start w-full">
-                {/* P1 Lives */}
-                <div className="flex flex-col gap-1 items-start">
-                    {playerMode === '2p' && <span className="text-blue-400 font-bold text-xs bg-black/50 px-2 rounded">P1</span>}
-                    <div className="flex items-center gap-1">
-                        {Array.from({ length: MAX_LIVES }).map((_, i) => (
-                        <Heart 
-                            key={`p1-${i}`} 
-                            className={`w-8 h-8 drop-shadow-md ${i < (lives[0] || 0) ? 'fill-red-500 text-red-600' : 'fill-slate-800 text-slate-700'}`} 
-                        />
-                        ))}
-                    </div>
+                {/* Lives */}
+                <div className="flex items-center gap-0.5 md:gap-1">
+                    {Array.from({ length: MAX_LIVES }).map((_, i) => (
+                    <Heart
+                        key={`life-${i}`}
+                        className={`w-6 h-6 md:w-8 md:h-8 drop-shadow-md ${i < (lives[0] || 0) ? 'fill-orange-500 text-orange-600' : 'fill-slate-800 text-slate-700'}`}
+                    />
+                    ))}
                 </div>
 
                  {/* Score (Center) */}
                  <div className="flex flex-col items-center">
-                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Score</div>
-                    <div className="text-5xl font-black text-white drop-shadow-lg tabular-nums">
+                    <div className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">Score</div>
+                    <div className="text-3xl md:text-5xl font-black text-white drop-shadow-lg tabular-nums">
                         {score}
                     </div>
                  </div>
 
-                {/* P2 Lives (Only in 2P) */}
-                {playerMode === '2p' && (
-                    <div className="flex flex-col gap-1 items-end">
-                        <span className="text-green-400 font-bold text-xs bg-black/50 px-2 rounded">P2</span>
-                        <div className="flex items-center gap-1">
-                            {Array.from({ length: MAX_LIVES }).map((_, i) => (
-                            <Heart 
-                                key={`p2-${i}`} 
-                                className={`w-8 h-8 drop-shadow-md ${i < (lives[1] || 0) ? 'fill-red-500 text-red-600' : 'fill-slate-800 text-slate-700'}`} 
-                            />
-                            ))}
-                        </div>
-                    </div>
-                )}
+                {/* Empty space for balance */}
+                <div className="w-20 md:w-32"></div>
             </div>
 
             {/* Paused Overlay */}
             {status === GameStatus.PAUSED && (
-                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-20 pointer-events-auto">
-                    <h2 className="text-6xl font-black text-white tracking-widest uppercase mb-8">Paused</h2>
-                    <div className="flex gap-4">
+                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-20 pointer-events-auto p-4">
+                    <h2 className="text-4xl md:text-6xl font-black text-white tracking-widest uppercase mb-6 md:mb-8">Paused</h2>
+                    <div className="flex flex-col md:flex-row gap-3 md:gap-4 w-full max-w-xs md:max-w-none">
                         <button 
                             onClick={togglePause}
-                            className="px-8 py-3 bg-white hover:bg-slate-200 text-slate-900 font-bold rounded-full transition-colors flex items-center gap-2"
+                            className="px-6 py-3 md:px-8 md:py-3 bg-white hover:bg-slate-200 text-slate-900 font-bold rounded-full transition-colors flex items-center justify-center gap-2 text-sm md:text-base"
                         >
-                           <Play className="w-5 h-5" /> Resume
+                           <Play className="w-4 h-4 md:w-5 md:h-5" /> Resume
                         </button>
-                        <button 
-                            onClick={startGame}
-                            className="px-8 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-full transition-colors flex items-center gap-2"
+                        <button
+                            onClick={handleBackToMenu}
+                            className="px-6 py-3 md:px-8 md:py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-full transition-colors flex items-center justify-center gap-2 text-sm md:text-base"
                         >
-                           <RotateCcw className="w-5 h-5" /> Restart
+                           <RotateCcw className="w-4 h-4 md:w-5 md:h-5" /> Back to Menu
                         </button>
                     </div>
                  </div>
@@ -378,11 +440,11 @@ export default function App() {
 
         {/* 5. Game Over with Enhanced Share Flow */}
         {status === GameStatus.GAME_OVER && (
-          <div className="absolute inset-0 bg-slate-900 z-40 flex flex-col md:flex-row overflow-hidden">
+          <div className="absolute inset-0 bg-slate-900 z-40 flex flex-col overflow-y-auto">
             
-            {/* Left: Interactive Preview */}
-            <div className="flex-1 relative bg-black flex items-center justify-center p-4">
-                <div className="relative w-full max-w-lg aspect-video rounded-xl overflow-hidden shadow-2xl border border-slate-700">
+            {/* Top: Interactive Preview - Compact on mobile */}
+            <div className="shrink-0 relative bg-black flex items-center justify-center p-2 md:p-4">
+                <div className="relative w-full max-w-2xl aspect-video rounded-lg md:rounded-xl overflow-hidden shadow-2xl border border-slate-700">
                     {/* The Base Image */}
                     {screenshots.length > 0 && (
                         <img 
@@ -393,87 +455,108 @@ export default function App() {
                     )}
                     
                     {/* The Overlay (Mimics what is generated on the canvas) */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent flex flex-col justify-between p-6">
+                    <div className="absolute inset-0 flex flex-col justify-between p-2 md:p-6">
+                         {/* Top gradient */}
+                         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-transparent pointer-events-none" />
+                         
+                         {/* Bottom gradient */}
+                         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent pointer-events-none" />
+                         
                          {/* Top: CTA */}
-                         <div className="text-center pt-2">
-                             <h2 className="text-2xl md:text-3xl font-black text-red-500 drop-shadow-md tracking-tight">
+                         <div className="text-center pt-0.5 md:pt-2 relative z-10">
+                             <h2 className="text-xs md:text-2xl lg:text-3xl font-black text-orange-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] tracking-tight leading-tight px-1 md:px-2">
                                  {ctaText}
                              </h2>
                          </div>
 
                          {/* Bottom: Stats */}
-                         <div className="flex justify-between items-end">
-                             <div>
-                                 <p className="text-xs font-bold text-slate-400">SCORE</p>
-                                 <p className="text-5xl font-black text-emerald-400 leading-none">{score}</p>
+                         <div className="flex justify-between items-end relative z-10">
+                             <div className="drop-shadow-lg">
+                                 <p className="text-[8px] md:text-xs font-bold text-white/90 mb-0 md:mb-1">SCORE</p>
+                                 <p className="text-2xl md:text-5xl lg:text-6xl font-black text-orange-400 leading-none drop-shadow-[0_0_20px_rgba(249,115,22,0.6)]">{score}</p>
                              </div>
-                             <div className="text-right opacity-70">
-                                 <p className="text-xs text-white">Join the Fight at:</p>
-                                 <p className="text-sm font-bold text-white">{GAME_URL}</p>
+                             <div className="text-right drop-shadow-md">
+                                 <p className="text-[6px] md:text-[10px] text-white/60">Play at:</p>
+                                 <p className="text-[10px] md:text-sm font-bold text-white/95">{GAME_URL}</p>
                              </div>
                          </div>
                     </div>
                 </div>
             </div>
 
-            {/* Right: Controls & Gallery */}
-            <div className="w-full md:w-80 bg-slate-800 border-l border-slate-700 p-6 flex flex-col gap-6 shadow-2xl z-50">
-                <div className="text-center md:text-left">
-                    <h2 className="text-3xl font-black text-white italic">GAME OVER</h2>
-                    <p className="text-slate-400 text-sm">Select a moment to share</p>
+            {/* Bottom: Controls & Gallery - Scrollable on mobile */}
+            <div className="flex-1 w-full bg-slate-800 border-t border-slate-700 p-3 md:p-6 flex flex-col gap-2 md:gap-5 shadow-2xl z-50 overflow-y-auto">
+                <div className="text-center shrink-0">
+                    <h2 className="text-2xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-600 italic mb-0.5 md:mb-1">GAME OVER</h2>
+                    <p className="text-slate-400 text-[10px] md:text-sm">Select your best moment</p>
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 md:px-3 md:py-1 bg-orange-500/10 border border-orange-500/20 rounded-full mt-1">
+                        <div className="w-1 h-1 md:w-1.5 md:h-1.5 bg-orange-400 rounded-full animate-pulse"></div>
+                        <span className="text-orange-400 text-[10px] md:text-xs font-semibold">Score: {score}</span>
+                    </div>
                 </div>
 
-                {/* Gallery */}
-                <div className="grid grid-cols-3 gap-2">
+                {/* Gallery - Horizontal scroll on mobile for space efficiency */}
+                <div className="flex gap-1.5 md:gap-2 overflow-x-auto md:grid md:grid-cols-3 max-w-md mx-auto w-full pb-1 md:pb-0 shrink-0">
                     {screenshots.map((shot, idx) => (
                         <button
                             key={idx}
                             onClick={() => setSelectedScreenshotIdx(idx)}
-                            className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all ${selectedScreenshotIdx === idx ? 'border-emerald-500 scale-105 shadow-emerald-500/50 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                            className={`relative shrink-0 w-24 md:w-auto aspect-video rounded-md md:rounded-lg overflow-hidden border-2 transition-all ${selectedScreenshotIdx === idx ? 'border-orange-500 scale-105 shadow-orange-500/50 shadow-lg ring-2 ring-orange-500/20' : 'border-slate-600 opacity-60 hover:opacity-100 hover:border-slate-500'}`}
                         >
                             <img src={shot} className="w-full h-full object-cover" alt={`Shot ${idx}`} />
+                            {selectedScreenshotIdx === idx && (
+                                <div className="absolute inset-0 bg-orange-500/10 pointer-events-none"></div>
+                            )}
                         </button>
                     ))}
                     {screenshots.length === 0 && (
-                         <div className="col-span-3 text-center text-slate-500 text-xs py-4 italic">No screenshots captured</div>
+                         <div className="w-full text-center text-slate-500 text-[10px] md:text-xs py-2 md:py-4 italic">No screenshots captured</div>
                     )}
                 </div>
 
-                <div className="flex-1"></div>
+                {/* Share Prompt - Compact on mobile */}
+                {!copied && screenshots.length > 0 && (
+                    <div className="bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/20 rounded-md md:rounded-lg p-2 md:p-3 text-center max-w-md mx-auto w-full shrink-0">
+                        <p className="text-orange-300 text-[10px] md:text-xs font-semibold">📸 Share Your Victory!</p>
+                    </div>
+                )}
 
+                {/* Success Message */}
+                {copied && (
+                    <div className="bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/30 rounded-md md:rounded-lg p-2 md:p-3 text-center animate-in fade-in zoom-in duration-300 max-w-md mx-auto w-full shrink-0">
+                        <p className="text-emerald-300 text-[10px] md:text-xs font-semibold">✨ Ready to share!</p>
+                    </div>
+                )}
 
-                {/* Actions */}
-                <div className="flex flex-col gap-3">
+                {/* Actions - Always visible */}
+                <div className="flex flex-col gap-2 md:gap-3 max-w-md mx-auto w-full mt-auto shrink-0">
                     <button
                         onClick={handleShare}
-                        disabled={screenshots.length === 0}
-                        className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${copied ? 'bg-slate-700 text-emerald-400' : 'bg-white hover:bg-emerald-50 text-slate-900 shadow-lg'}`}
+                        disabled={screenshots.length === 0 || isGenerating}
+                        className={`w-full py-2.5 md:py-4 rounded-lg md:rounded-xl font-black text-sm md:text-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+                            copied 
+                                ? 'bg-emerald-500/20 text-emerald-300 border-2 border-emerald-500/50' 
+                                : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg shadow-orange-500/25'
+                        }`}
                     >
                         {isGenerating ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
                         ) : copied ? (
                             <>
-                                <Check className="w-5 h-5" /> Copied Image & Link!
+                                <Check className="w-4 h-4 md:w-5 md:h-5" /> Image Copied!
                             </>
                         ) : (
                             <>
-                                <Copy className="w-5 h-5" /> Share Result
+                                <Copy className="w-4 h-4 md:w-5 md:h-5" /> SHARE RESULT
                             </>
                         )}
                     </button>
 
                     <button
                         onClick={startGame}
-                        className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2"
+                        className="w-full py-2.5 md:py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 border border-slate-600 text-xs md:text-base"
                     >
-                        <RotateCcw className="w-5 h-5" /> PLAY AGAIN
-                    </button>
-
-                    <button
-                         onClick={handleBackToMenu}
-                         className="text-center text-slate-500 text-xs hover:text-slate-300 mt-2"
-                    >
-                        Back to Menu
+                        <RotateCcw className="w-3.5 h-3.5 md:w-4 md:h-4" /> Play Again
                     </button>
                 </div>
             </div>
@@ -483,25 +566,99 @@ export default function App() {
 
       {/* Footer Info */}
       {status === GameStatus.LANDING && (
-        <div className="mt-6 flex flex-col md:flex-row gap-8 text-slate-500 text-sm animate-in slide-in-from-bottom-4 duration-700">
+        <div className="mt-4 md:mt-6 flex flex-col md:flex-row gap-4 md:gap-8 text-slate-500 text-xs md:text-sm animate-in slide-in-from-bottom-4 duration-700 px-4">
             <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
-                <span className="font-bold text-white">1</span>
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 flex-shrink-0">
+                <span className="font-bold text-white text-xs md:text-sm">1</span>
             </div>
             <span>Face camera directly</span>
             </div>
             <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
-                <span className="font-bold text-white">2</span>
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 flex-shrink-0">
+                <span className="font-bold text-white text-xs md:text-sm">2</span>
             </div>
-            <span>Shoot glowing orbs!</span>
+            <span>Shoot altcoins with fingers</span>
             </div>
             <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
-                <span className="font-bold text-white">3</span>
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 flex-shrink-0">
+                <span className="font-bold text-white text-xs md:text-sm">3</span>
             </div>
-            <span>Protect your face</span>
+            <span>Eat all the ₿</span>
             </div>
+        </div>
+      )}
+
+      {/* Footer Links */}
+      <footer className="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-slate-800 w-full max-w-4xl text-center px-4">
+        <div className="flex flex-wrap justify-center items-center gap-3 md:gap-4 text-slate-400 text-xs">
+          <button 
+            onClick={() => setShowPrivacyModal(true)}
+            className="hover:text-orange-400 transition-colors underline"
+          >
+            Privacy
+          </button>
+          <span className="text-slate-700 hidden sm:inline">•</span>
+          <a 
+            href="https://hope.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hover:text-orange-400 transition-colors"
+          >
+            Hope.com
+          </a>
+          <span className="text-slate-700 hidden sm:inline">•</span>
+          <a 
+            href="https://x.com/docstacks" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hover:text-orange-400 transition-colors"
+          >
+            @docstacks
+          </a>
+          <span className="text-slate-700 hidden sm:inline">•</span>
+          <a 
+            href="https://github.com/docstacks" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hover:text-orange-400 transition-colors"
+          >
+            GitHub
+          </a>
+        </div>
+      </footer>
+
+      {/* Privacy Policy Modal */}
+      {showPrivacyModal && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
+          onClick={() => setShowPrivacyModal(false)}
+        >
+          <div 
+            className="bg-slate-800 border border-slate-700 rounded-xl p-5 md:p-6 max-w-md w-full shadow-2xl animate-in zoom-in duration-200 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg md:text-xl font-bold text-white mb-3 md:mb-4">Privacy Policy</h3>
+            <div className="text-slate-300 text-xs md:text-sm space-y-2 md:space-y-3 mb-5 md:mb-6">
+              <p>
+                <strong className="text-orange-400">No Data Collection:</strong> This game runs entirely in your browser. We do not collect, store, or transmit any personal data.
+              </p>
+              <p>
+                <strong className="text-orange-400">Local Processing:</strong> All camera images and gameplay screenshots are processed locally on your device. Nothing is sent to any server.
+              </p>
+              <p>
+                <strong className="text-orange-400">Camera Access:</strong> Camera access is only used for gameplay detection. The video stream never leaves your device.
+              </p>
+              <p>
+                <strong className="text-orange-400">Screenshot Storage:</strong> When you share screenshots, they are temporarily stored in your browser's memory and only copied to your clipboard when you click the share button.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowPrivacyModal(false)}
+              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors text-sm md:text-base"
+            >
+              Got it!
+            </button>
+          </div>
         </div>
       )}
     </div>

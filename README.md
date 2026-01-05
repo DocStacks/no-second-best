@@ -1,4 +1,4 @@
-# No Second Best 🎯
+# No Second Best ₿
 
 An AR webcam-controlled game where you defend Bitcoin from altcoins! Shoot altcoins with finger guns, eat Bitcoin with your mouth for power-ups, and become Michael Saylor himself. Built with React, TypeScript, and MediaPipe Vision.
 
@@ -12,15 +12,14 @@ An AR webcam-controlled game where you defend Bitcoin from altcoins! Shoot altco
 ## 🎮 Features
 
 - **AR Camera Integration**: Real-time face and hand detection using MediaPipe Vision
-- **Multiple Enemy Themes**: Battle bugs, zombies, spiders, or **altcoins** (₿ Bitcoin theme!)
+- **Bitcoin vs Altcoins**: Defend against waves of attacking altcoins seeking to challenge Bitcoin's supremacy
 - **Bitcoin Power-Ups**: Eat Bitcoin with your mouth for hero sound activation and massive bonuses
-- **Michael Saylor Face Overlay**: Become the Bitcoin hero with legendary face overlay
-- **1-2 Player Modes**: Single player or cooperative gameplay
-- **Dynamic Difficulty**: Enemies spawn faster as you progress
-- **Screenshot Sharing**: Capture and share your epic moments
-- **Social Integration**: Twitter, Facebook, and Instagram sharing
-- **QR Code Access**: Easy mobile sharing
-- **High Score Tracking**: Compete with yourself!
+- **Michael Saylor Face Overlay**: Transform into the legendary Bitcoin champion with face overlay
+- **Single Player Mode**: Protect Bitcoin from the altcoin invasion
+- **Dynamic Difficulty**: Altcoins spawn faster and move quicker as you progress
+- **Screenshot Sharing**: Capture and share your heroic Bitcoin defense moments
+- **Social Integration**: Easy sharing with automatic image + text clipboard copy
+- **High Score Tracking**: Compete against your personal best score
 
 ## 🚀 Run Locally
 
@@ -45,11 +44,11 @@ An AR webcam-controlled game where you defend Bitcoin from altcoins! Shoot altco
 ## 📱 How to Play
 
 1. **Allow Camera Access** - The game needs your camera to detect faces and hands
-2. **Choose Your Mode** - Single player or 2-player cooperative
-3. **Select Enemy Theme** - Bugs, Zombies, Spiders, or **₿ Bitcoin** (altcoins!)
-4. **Get in Frame** - Center your face and raise your index fingers
-5. **Shoot Altcoins!** - Use finger guns to swat altcoins before they reach your face
-6. **Eat Bitcoin!** - Open your mouth to consume Bitcoin power-ups for the legendary hero sound and massive bonuses
+2. **Get in Frame** - Center your face and raise your index fingers
+3. **Shoot Altcoins!** - Point your index fingers at attacking altcoins to shoot them down
+4. **Eat Bitcoin!** - Open your mouth wide to consume Bitcoin power-ups for massive bonuses and the legendary hero sound
+5. **Protect Your Face** - Don't let altcoins touch your face or you'll lose lives
+6. **Survive & Score** - The game gets harder as you progress. How long can you defend Bitcoin?
 
 ## 🛠️ Tech Stack
 
@@ -112,4 +111,6 @@ For better social sharing, create an `og-image.png` (1200x630) file in your `pub
 
 ---
 
-**Made with ❤️ and lots of virtual bug spray**
+**Made with ❤️ for Bitcoin Maximalists Everywhere**
+
+*There is no second best.*

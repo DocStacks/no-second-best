@@ -4,23 +4,16 @@ export const ASPECT_RATIO = VIDEO_WIDTH / VIDEO_HEIGHT;
 
 export const MAX_LIVES = 3;
 export const FACE_HIT_RADIUS = 0.15; // Normalized relative to screen width
-export const SWAT_RADIUS = 0.08;
-export const BUG_SPAWN_INTERVAL_START = 1500; // ms
-export const BUG_SPAWN_INTERVAL_MIN = 400; // ms
-export const BUG_SPEED_BASE = 0.003; // Normalized movement per frame
-export const BUG_SIZE = 0.05; // Normalized size
+export const SHOOT_RADIUS = 0.08; // Radius for shooting altcoins with finger guns
+export const ENEMY_SPAWN_INTERVAL_START = 1500; // ms - Starting spawn rate for altcoins
+export const ENEMY_SPAWN_INTERVAL_MIN = 400; // ms - Minimum spawn rate (max difficulty)
+export const ENEMY_SPEED_BASE = 0.003; // Normalized movement per frame
+export const ENEMY_SIZE = 0.05; // Normalized size for altcoins
 
 // Power Ups (Bitcoin)
-export const POWERUP_SPAWN_CHANCE = 0.002;
+export const POWERUP_SPAWN_CHANCE = 0.008; // Reduced from 0.025 to make Bitcoin less common
 export const POWERUP_SIZE = 0.08;
 export const BITCOIN_EAT_RADIUS = 0.1; // Radius for mouth to "eat" Bitcoin
-
-// Colors - Bugs
-export const COLOR_BUG_BEETLE = '#ef4444'; // Red
-export const COLOR_BUG_WASP = '#fbbf24'; // Amber
-export const COLOR_BUG_WASP_STRIPE = '#1f2937'; // Slate
-export const COLOR_BUG_FLY = '#22d3ee'; // Cyan
-export const COLOR_BUG_WING = 'rgba(255, 255, 255, 0.6)';
 
 // Bitcoin Theme Colors
 export const COLOR_BITCOIN_PRIMARY = '#f7931a'; // Bitcoin Orange
@@ -31,8 +24,8 @@ export const COLOR_BITCOIN_SHADOW = '#92400e'; // Shadow Orange
 export const COLOR_POWERUP_ORB = '#f59e0b';
 export const COLOR_POWERUP_GLOW = 'rgba(245, 158, 11, 0.4)';
 
-export const COLOR_SWAT_ACTIVE = '#22c55e';
-export const COLOR_SWAT_IDLE = '#fbbf24';
+export const COLOR_TARGET_ACTIVE = '#f7931a'; // Orange color for finger gun targets (Bitcoin theme)
+export const COLOR_TARGET_IDLE = '#fbbf24';
 export const COLOR_FACE_ZONE = 'rgba(239, 68, 68, 0.2)';
 
 // Bitcoin Theme - Michael Saylor Hero

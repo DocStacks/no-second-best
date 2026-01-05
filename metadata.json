@@ -1,6 +1,6 @@
 {
-  "name": "AR Shooter",
-  "description": "A webcam-controlled AR game where you swat flying bugs/spiders/zombies to protect your face.",
+  "name": "No Second Best",
+  "description": "Defend Bitcoin from altcoins in this AR game! Shoot altcoins with finger guns, eat Bitcoin power-ups, and become Michael Saylor.",
   "requestFramePermissions": [
     "camera"
   ]

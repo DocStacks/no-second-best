@@ -84,8 +84,14 @@ function scheduleNote(beatNumber: number, time: number) {
 }
 
 function scheduler() {
-  if (!audioCtx) return;
-  // while there are notes that will need to play before the next interval, 
+  if (!audioCtx || audioCtx.state === 'suspended') return;
+
+  // If we've fallen behind (e.g., due to context suspension), reset timing
+  if (nextNoteTime < audioCtx.currentTime - 0.1) {
+    nextNoteTime = audioCtx.currentTime + 0.05;
+  }
+
+  // while there are notes that will need to play before the next interval,
   // schedule them and advance the pointer.
   while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
     scheduleNote(current16thNote, nextNoteTime);
@@ -96,7 +102,10 @@ function scheduler() {
 
 export const startMusic = () => {
   const ctx = initAudio();
-  if (!ctx || isMuted || timerID) return; // Already playing or muted
+  if (!ctx || isMuted) return;
+
+  // If already playing, don't restart
+  if (timerID) return;
 
   if (ctx.state === 'suspended') ctx.resume();
 
@@ -183,44 +192,82 @@ export const playBiteSound = () => {
   osc.stop(ctx.currentTime + 0.3);
 };
 
-export const playHeroSound = () => {
+// Cache for audio buffers
+const audioBuffers: { [key: string]: AudioBuffer } = {};
+
+const loadAudioBuffer = async (url: string): Promise<AudioBuffer | null> => {
+  if (audioBuffers[url]) return audioBuffers[url];
+
+  try {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    const ctx = initAudio();
+    if (!ctx) return null;
+
+    const buffer = await ctx.decodeAudioData(arrayBuffer);
+    audioBuffers[url] = buffer;
+    return buffer;
+  } catch (error) {
+    console.error('Error loading audio:', error);
+    return null;
+  }
+};
+
+export const playHeroSound = async () => {
   const ctx = initAudio();
   if (!ctx || isMuted) return;
 
-  // "There is no second best" - Hero activation sound
-  // Strong, confident, rising tone sequence
-  const notes = [
-    { freq: 261.63, duration: 0.15, delay: 0 },     // C4
-    { freq: 329.63, duration: 0.15, delay: 0.1 },   // E4
-    { freq: 392.00, duration: 0.15, delay: 0.2 },   // G4
-    { freq: 523.25, duration: 0.3, delay: 0.3 },    // C5 (held longer)
-  ];
+  const audioUrl = '/assets/there-is-no-second-best.mp3';
+  const buffer = await loadAudioBuffer(audioUrl);
 
-  notes.forEach(({ freq, duration, delay }) => {
-    const osc = ctx.createOscillator();
+  if (buffer) {
+    // Play the actual audio file
+    const source = ctx.createBufferSource();
     const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
 
-    osc.type = 'triangle';
-    osc.frequency.value = freq;
+    source.buffer = buffer;
+    gain.gain.setValueAtTime(0.5, ctx.currentTime); // Adjust volume as needed
 
-    filter.type = 'lowpass';
-    filter.frequency.value = 2000;
-    filter.Q.value = 1;
-
-    // Heroic envelope - strong attack, sustain, quick decay
-    gain.gain.setValueAtTime(0, ctx.currentTime + delay);
-    gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + delay + 0.02);
-    gain.gain.setValueAtTime(0.4, ctx.currentTime + delay + duration * 0.7);
-    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + delay + duration);
-
-    osc.connect(filter);
-    filter.connect(gain);
+    source.connect(gain);
     gain.connect(ctx.destination);
 
-    osc.start(ctx.currentTime + delay);
-    osc.stop(ctx.currentTime + delay + duration);
-  });
+    source.start(ctx.currentTime);
+  } else {
+    // Fallback to synthesized sound if audio loading fails
+    console.log('Using fallback synthesized sound');
+    const notes = [
+      { freq: 261.63, duration: 0.15, delay: 0 },     // C4
+      { freq: 329.63, duration: 0.15, delay: 0.1 },   // E4
+      { freq: 392.00, duration: 0.15, delay: 0.2 },   // G4
+      { freq: 523.25, duration: 0.3, delay: 0.3 },    // C5 (held longer)
+    ];
+
+    notes.forEach(({ freq, duration, delay }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+
+      filter.type = 'lowpass';
+      filter.frequency.value = 2000;
+      filter.Q.value = 1;
+
+      // Heroic envelope - strong attack, sustain, quick decay
+      gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+      gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + delay + 0.02);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + delay + duration * 0.7);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + delay + duration);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + duration);
+    });
+  }
 };
 
 export const toggleMute = () => {
