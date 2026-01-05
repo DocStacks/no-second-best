@@ -82,7 +82,6 @@ export const GameEngine: React.FC<GameEngineProps> = ({
 
     // Preload Michael Saylor image for Bitcoin theme
     const img = new Image();
-    img.crossOrigin = 'anonymous';
     img.onload = () => {
       console.log('Michael Saylor image loaded successfully');
       michaelSaylorImageRef.current = img;
@@ -94,7 +93,6 @@ export const GameEngine: React.FC<GameEngineProps> = ({
 
     // Preload Bitcoin image for power-ups
     const bitcoinImg = new Image();
-    bitcoinImg.crossOrigin = 'anonymous';
     bitcoinImg.onload = () => {
       altcoinImagesRef.current['bitcoin'] = bitcoinImg;
     };
@@ -103,7 +101,6 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     // Preload altcoin images
     Object.entries(ALTCOIN_IMAGES).forEach(([coin, url]) => {
       const coinImg = new Image();
-      coinImg.crossOrigin = 'anonymous';
       coinImg.onload = () => {
         altcoinImagesRef.current[coin] = coinImg;
       };

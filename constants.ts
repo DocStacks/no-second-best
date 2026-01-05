@@ -35,31 +35,31 @@ export const MICHAEL_SAYLOR_IMAGE = '/assets/michael-saylor.png';
 export const COLOR_BITCOIN_ORB = '#f7931a'; // Bitcoin orange
 export const COLOR_BITCOIN_GLOW = 'rgba(247, 147, 26, 0.4)';
 
-// Bitcoin Theme - Power-up Images
-export const BITCOIN_IMAGE = 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png';
+// Bitcoin Theme - Power-up Images (local assets)
+export const BITCOIN_IMAGE = '/assets/coins/bitcoin.png';
 
-// Bitcoin Theme - Altcoin Images (from CoinGecko CDN)
+// Bitcoin Theme - Altcoin Images (local assets)
 export const ALTCOIN_IMAGES = {
-  'eth': 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
-  'usdt': 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
-  'usdc': 'https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png',
-  'bnb': 'https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png',
-  'sol': 'https://assets.coingecko.com/coins/images/4128/large/solana.png',
-  'xrp': 'https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png',
-  'trx': 'https://assets.coingecko.com/coins/images/1094/large/tron-logo.png',
-  'doge': 'https://assets.coingecko.com/coins/images/5/large/dogecoin.png',
-  'ada': 'https://assets.coingecko.com/coins/images/975/large/cardano.png',
-  'steth': 'https://assets.coingecko.com/coins/images/13442/large/steth_logo.png',
-  'link': 'https://assets.coingecko.com/coins/images/877/large/chainlink-new-logo.png',
-  'shib': 'https://assets.coingecko.com/coins/images/11939/large/shiba.png',
-  'hbar': 'https://assets.coingecko.com/coins/images/3688/large/hbar.png',
-  'dai': 'https://assets.coingecko.com/coins/images/9956/large/Badge_Dai.png',
-  'avax': 'https://assets.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png',
-  'uni': 'https://assets.coingecko.com/coins/images/12504/large/uniswap-uni.png',
-  'aave': 'https://assets.coingecko.com/coins/images/12645/large/AAVE.png',
-  'comp': 'https://assets.coingecko.com/coins/images/10775/large/COMP.png',
-  'zec': 'https://assets.coingecko.com/coins/images/486/large/circle-zcash-color.png',
-  'etc': 'https://assets.coingecko.com/coins/images/453/large/ethereum-classic-logo.png'
+  'eth': '/assets/coins/eth.png',
+  'usdt': '/assets/coins/usdt.png',
+  'usdc': '/assets/coins/usdc.png',
+  'bnb': '/assets/coins/bnb.png',
+  'sol': '/assets/coins/sol.png',
+  'xrp': '/assets/coins/xrp.png',
+  'trx': '/assets/coins/trx.png',
+  'doge': '/assets/coins/doge.png',
+  'ada': '/assets/coins/ada.png',
+  'steth': '/assets/coins/steth.png',
+  'link': '/assets/coins/link.png',
+  'shib': '/assets/coins/shib.png',
+  'hbar': '/assets/coins/hbar.png',
+  'dai': '/assets/coins/dai.png',
+  'avax': '/assets/coins/avax.png',
+  'uni': '/assets/coins/uni.png',
+  'aave': '/assets/coins/aave.png',
+  'comp': '/assets/coins/comp.png',
+  'zec': '/assets/coins/zec.png',
+  'etc': '/assets/coins/etc.png'
 };
 
 // Fallback colors for altcoins (if images fail to load)
