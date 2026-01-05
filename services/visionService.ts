@@ -49,3 +49,24 @@ export const detectHands = (video: HTMLVideoElement, timestamp: number) => {
   if (!handLandmarker) return null;
   return handLandmarker.detectForVideo(video, timestamp);
 };
+
+export const getMouthPosition = (faceResult: any): Point | null => {
+  if (!faceResult || faceResult.faceLandmarks.length === 0) return null;
+
+  const landmarks = faceResult.faceLandmarks[0];
+
+  // MediaPipe face landmarks: mouth is roughly indices 61-68 (outer lips), 78-85 (inner lips)
+  // We'll use the center of the outer mouth
+  const mouthIndices = [61, 62, 63, 64, 65, 66, 67, 68];
+  let mouthX = 0, mouthY = 0;
+
+  mouthIndices.forEach(index => {
+    mouthX += landmarks[index].x;
+    mouthY += landmarks[index].y;
+  });
+
+  mouthX /= mouthIndices.length;
+  mouthY /= mouthIndices.length;
+
+  return { x: mouthX, y: mouthY };
+};

@@ -17,7 +17,7 @@ const GAME_URL = window.location.host; // Dynamically get the current URL
 
 export default function App() {
   const [status, setStatus] = useState<GameStatus>(GameStatus.LANDING);
-  const [theme, setTheme] = useState<EnemyTheme>('bugs');
+  const theme: EnemyTheme = 'bitcoin';
   const [playerMode, setPlayerMode] = useState<PlayerMode>('1p');
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState<number[]>([MAX_LIVES]);
@@ -180,7 +180,12 @@ export default function App() {
   };
 
   // Generate share message options
-  const shareMessages = [
+  const shareMessages = theme === 'bitcoin' ? [
+    `Just scored ${score} points defending Bitcoin from altcoins! ₿⚡ Can you beat me?`,
+    `Bitcoin hero! ${score} points shooting altcoins - think you can do better? 🎯`,
+    `HODLing and shooting! ${score} points in Bitcoin AR Shooter. Your turn! ₿`,
+    `There is no second best! ${score} points protecting the king of crypto! 👑`
+  ] : [
     `Just scored ${score} points swatting bugs with AR! Can you beat me? 🐛`,
     `AR Shooter champion here! ${score} points - think you can do better? 🎯`,
     `Finger guns out, bugs down! ${score} points in AR Shooter. Your turn! 👆`,
@@ -191,11 +196,11 @@ export default function App() {
     <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 font-sans select-none">
       {/* Header */}
       <header className="mb-4 text-center">
-        <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 tracking-tight">
-          AR SHOOTER
+        <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-600 tracking-tight">
+          NO SECOND BEST
         </h1>
         <p className="text-slate-400 mt-2 text-sm md:text-base">
-          Shoot {theme} with finger guns • Protect your face!
+          Bitcoin AR Battle • Shoot altcoins • Eat ₿ with your mouth!
         </p>
       </header>
 
@@ -236,53 +241,32 @@ export default function App() {
              <div className="flex flex-col gap-4 mb-8">
                 {/* Player Mode */}
                 <div className="flex gap-2 bg-slate-800 p-1 rounded-lg justify-center">
-                   <button 
+                   <button
                      onClick={() => setPlayerMode('1p')}
-                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-colors ${playerMode === '1p' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-colors ${playerMode === '1p' ? 'bg-orange-500 text-slate-900' : 'text-slate-400 hover:text-white'}`}
                    >
                      <User className="w-4 h-4"/> 1 Player
                    </button>
-                   <button 
+                   <button
                      onClick={() => setPlayerMode('2p')}
-                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-colors ${playerMode === '2p' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-colors ${playerMode === '2p' ? 'bg-orange-500 text-slate-900' : 'text-slate-400 hover:text-white'}`}
                    >
                      <Users className="w-4 h-4"/> 2 Players
                    </button>
                 </div>
-
-                {/* Enemy Selector */}
-                <div className="flex gap-2 bg-slate-800 p-1 rounded-lg">
-                    <button 
-                    onClick={() => setTheme('bugs')}
-                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${theme === 'bugs' ? 'bg-emerald-500 text-slate-900' : 'text-slate-400 hover:text-white'}`}
-                    >
-                    Bugs
-                    </button>
-                    <button 
-                    onClick={() => setTheme('zombies')}
-                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${theme === 'zombies' ? 'bg-emerald-500 text-slate-900' : 'text-slate-400 hover:text-white'}`}
-                    >
-                    Zombies
-                    </button>
-                    <button 
-                    onClick={() => setTheme('spiders')}
-                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${theme === 'spiders' ? 'bg-emerald-500 text-slate-900' : 'text-slate-400 hover:text-white'}`}
-                    >
-                    Spiders
-                    </button>
-                </div>
              </div>
 
              <ul className="text-slate-300 text-left space-y-3 mb-8 max-w-sm text-sm">
-                <li className="flex items-center gap-2"><div className="w-2 h-2 bg-emerald-400 rounded-full"/> Allow camera access to begin.</li>
-                <li className="flex items-center gap-2"><div className="w-2 h-2 bg-emerald-400 rounded-full"/> Use BOTH hands to shoot.</li>
+                <li className="flex items-center gap-2"><div className="w-2 h-2 bg-orange-400 rounded-full"/> Allow camera access to begin.</li>
+                <li className="flex items-center gap-2"><div className="w-2 h-2 bg-orange-400 rounded-full"/> Use BOTH hands to shoot altcoins.</li>
+                <li className="flex items-center gap-2"><div className="w-2 h-2 bg-amber-400 rounded-full"/> Open your mouth to eat ₿ power-ups!</li>
                 {playerMode === '2p' && (
-                    <li className="flex items-center gap-2"><div className="w-2 h-2 bg-blue-400 rounded-full"/> P1 Left, P2 Right: Defend YOUR face!</li>
+                    <li className="flex items-center gap-2"><div className="w-2 h-2 bg-orange-400 rounded-full"/> P1 Left, P2 Right: Protect your Bitcoin!</li>
                 )}
              </ul>
-             <button 
+             <button
                onClick={handleStartRequest}
-               className="group relative px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black rounded-full text-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-emerald-500/25 flex items-center gap-2"
+               className="group relative px-8 py-4 bg-orange-500 hover:bg-amber-500 text-slate-900 font-black rounded-full text-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/25 flex items-center gap-2"
              >
                START GAME
                <Play className="w-5 h-5 fill-current" />

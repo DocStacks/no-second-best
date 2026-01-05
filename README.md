@@ -1,6 +1,6 @@
-# Your New Game Name 🎯
+# No Second Best 🎯
 
-Your game description here. Built with React, TypeScript, and MediaPipe Vision.
+An AR webcam-controlled game where you defend Bitcoin from altcoins! Shoot altcoins with finger guns, eat Bitcoin with your mouth for power-ups, and become Michael Saylor himself. Built with React, TypeScript, and MediaPipe Vision.
 
 <div align="center">
   <img src="https://img.shields.io/badge/React-19.2.3-blue" alt="React" />
@@ -12,7 +12,9 @@ Your game description here. Built with React, TypeScript, and MediaPipe Vision.
 ## 🎮 Features
 
 - **AR Camera Integration**: Real-time face and hand detection using MediaPipe Vision
-- **Multiple Enemy Themes**: Battle bugs, zombies, or spiders
+- **Multiple Enemy Themes**: Battle bugs, zombies, spiders, or **altcoins** (₿ Bitcoin theme!)
+- **Bitcoin Power-Ups**: Eat Bitcoin with your mouth for hero sound activation and massive bonuses
+- **Michael Saylor Face Overlay**: Become the Bitcoin hero with legendary face overlay
 - **1-2 Player Modes**: Single player or cooperative gameplay
 - **Dynamic Difficulty**: Enemies spawn faster as you progress
 - **Screenshot Sharing**: Capture and share your epic moments
@@ -27,7 +29,7 @@ Your game description here. Built with React, TypeScript, and MediaPipe Vision.
 1. **Clone and install:**
    ```bash
    git clone <your-repo-url>
-   cd your-new-game-name
+   cd no-second-best
    npm install
    ```
 
@@ -44,9 +46,10 @@ Your game description here. Built with React, TypeScript, and MediaPipe Vision.
 
 1. **Allow Camera Access** - The game needs your camera to detect faces and hands
 2. **Choose Your Mode** - Single player or 2-player cooperative
-3. **Select Enemy Theme** - Bugs, Zombies, or Spiders
+3. **Select Enemy Theme** - Bugs, Zombies, Spiders, or **₿ Bitcoin** (altcoins!)
 4. **Get in Frame** - Center your face and raise your index fingers
-5. **Shoot!** - Use finger guns to swat enemies before they reach your face
+5. **Shoot Altcoins!** - Use finger guns to swat altcoins before they reach your face
+6. **Eat Bitcoin!** - Open your mouth to consume Bitcoin power-ups for the legendary hero sound and massive bonuses
 
 ## 🛠️ Tech Stack
 

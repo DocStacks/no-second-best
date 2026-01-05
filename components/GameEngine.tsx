@@ -4,13 +4,14 @@ import {
   VIDEO_WIDTH, VIDEO_HEIGHT, BUG_SIZE, SWAT_RADIUS,
   FACE_HIT_RADIUS, MAX_LIVES,
   BUG_SPAWN_INTERVAL_START, BUG_SPAWN_INTERVAL_MIN, BUG_SPEED_BASE,
-  COLOR_BUG_BEETLE, COLOR_BUG_WASP, COLOR_BUG_WASP_STRIPE, COLOR_BUG_FLY, COLOR_BUG_WING,
-  COLOR_ZOMBIE_SKIN, COLOR_ZOMBIE_SHIRT, COLOR_ZOMBIE_EYES,
-  COLOR_SPIDER_BODY, COLOR_SPIDER_LEGS, COLOR_SPIDER_EYES,
-  COLOR_SWAT_ACTIVE, POWERUP_SPAWN_CHANCE, POWERUP_SIZE, COLOR_POWERUP_ORB, COLOR_POWERUP_GLOW
+  COLOR_SWAT_ACTIVE, POWERUP_SPAWN_CHANCE, POWERUP_SIZE,
+  BITCOIN_EAT_RADIUS, MICHAEL_SAYLOR_IMAGE,
+  COLOR_BITCOIN_ORB, COLOR_BITCOIN_GLOW, COLOR_BITCOIN_PRIMARY,
+  BITCOIN_IMAGE, ALTCOIN_IMAGES, ALTCOIN_COLORS,
+  COLOR_POWERUP_ORB, COLOR_POWERUP_GLOW
 } from '../constants';
-import { detectFace, detectHands } from '../services/visionService';
-import { playBlastSound, playBiteSound, playPowerUpSound, startMusic, stopMusic } from '../services/audioService';
+import { detectFace, detectHands, getMouthPosition } from '../services/visionService';
+import { playBlastSound, playBiteSound, playPowerUpSound, playHeroSound, startMusic, stopMusic } from '../services/audioService';
 
 interface GameEngineProps {
   status: GameStatus;
@@ -36,7 +37,9 @@ export const GameEngine: React.FC<GameEngineProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
-  
+  const michaelSaylorImageRef = useRef<HTMLImageElement | null>(null);
+  const altcoinImagesRef = useRef<{ [key: string]: HTMLImageElement }>({});
+
   // Game State Refs
   const enemiesRef = useRef<Enemy[]>([]);
   const particlesRef = useRef<Particle[]>([]);
@@ -51,7 +54,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
   const gameStartTimeRef = useRef<number>(0);
   const difficultyFactorRef = useRef<number>(0);
 
-  // Initialize Camera
+  // Initialize Camera and preload Michael Saylor image
   useEffect(() => {
     const startCamera = async () => {
       if (videoRef.current) {
@@ -73,6 +76,32 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         }
       }
     };
+
+    // Preload Michael Saylor image for Bitcoin theme
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      michaelSaylorImageRef.current = img;
+    };
+    img.src = MICHAEL_SAYLOR_IMAGE;
+
+    // Preload Bitcoin image for power-ups
+    const bitcoinImg = new Image();
+    bitcoinImg.crossOrigin = 'anonymous';
+    bitcoinImg.onload = () => {
+      altcoinImagesRef.current['bitcoin'] = bitcoinImg;
+    };
+    bitcoinImg.src = BITCOIN_IMAGE;
+
+    // Preload altcoin images
+    Object.entries(ALTCOIN_IMAGES).forEach(([coin, url]) => {
+      const coinImg = new Image();
+      coinImg.crossOrigin = 'anonymous';
+      coinImg.onload = () => {
+        altcoinImagesRef.current[coin] = coinImg;
+      };
+      coinImg.src = url;
+    });
 
     startCamera();
 
@@ -177,6 +206,9 @@ export const GameEngine: React.FC<GameEngineProps> = ({
 
   const spawnPowerUp = (now: number, w: number, h: number) => {
     if (Math.random() < POWERUP_SPAWN_CHANCE) {
+       const isBitcoinTheme = theme === 'bitcoin';
+       const powerUpType = isBitcoinTheme && Math.random() < 0.7 ? 'bitcoin' : 'bomb'; // 70% Bitcoin in Bitcoin theme
+
        powerUpsRef.current.push({
          id: Math.random().toString(),
          x: -0.1, // Start off left
@@ -184,7 +216,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
          vx: 0.002, // Slow float right
          vy: Math.sin(now * 0.001) * 0.001,
          size: POWERUP_SIZE,
-         type: 'bomb',
+         type: powerUpType,
          life: 1.0
        });
     }
@@ -226,43 +258,11 @@ export const GameEngine: React.FC<GameEngineProps> = ({
       let speedMultiplier = 1;
       let isSeeker = false;
 
-      // Type determination based on theme
-      if (theme === 'zombies') {
-        if (rand > 0.8) {
-             visualType = 'zombie_runner';
-             speedMultiplier = 0.5;
-             isSeeker = true;
-        } else {
-             visualType = 'zombie_walker';
-             speedMultiplier = 0.3;
-             isSeeker = true; 
-        }
-      } else if (theme === 'spiders') {
-         if (rand > 0.4) {
-             visualType = 'spider_jumper';
-             speedMultiplier = 1.5;
-             isSeeker = true;
-         } else {
-             visualType = 'spider_crawler';
-             speedMultiplier = 1.0;
-             isSeeker = false;
-         }
-      } else {
-        // Bugs
-        if (rand > 0.7) {
-            visualType = 'wasp';
-            speedMultiplier = 1.4;
-            isSeeker = true;
-        } else if (rand > 0.4) {
-            visualType = 'fly';
-            speedMultiplier = 1.2;
-            isSeeker = false;
-        } else {
-            visualType = 'beetle';
-            speedMultiplier = 0.9;
-            isSeeker = Math.random() < (0.2 + difficultyFactorRef.current * 0.5);
-        }
-      }
+      // Altcoins as enemies - all are seekers (they chase Bitcoin)
+      const altcoinTypes = ['eth', 'usdt', 'usdc', 'bnb', 'sol', 'xrp', 'trx', 'doge', 'ada', 'steth', 'link', 'shib', 'hbar', 'dai', 'avax', 'uni', 'aave', 'comp', 'zec', 'etc'];
+      visualType = altcoinTypes[Math.floor(rand * altcoinTypes.length)] as EnemyVisualType;
+      speedMultiplier = 0.8 + rand * 0.6; // Varying speeds for different altcoins
+      isSeeker = true; // All altcoins chase the player
 
       const speed = BUG_SPEED_BASE * (1 + difficultyFactorRef.current) * speedMultiplier;
 
@@ -316,162 +316,51 @@ export const GameEngine: React.FC<GameEngineProps> = ({
 
   const drawEnemy = (ctx: CanvasRenderingContext2D, enemy: Enemy, bx: number, by: number, bSize: number, time: number) => {
     ctx.save();
-    
-    // ZOMBIES: Add vertical "bob"
-    let drawY = by;
-    if (theme === 'zombies') {
-        const walkBob = Math.abs(Math.sin(time * 0.008 + enemy.animationOffset)) * (bSize * 0.3);
-        drawY = by - walkBob; 
-        ctx.translate(bx, drawY);
-        const sway = Math.sin(time * 0.005 + enemy.animationOffset) * 0.1;
-        ctx.rotate(sway); 
+
+    // Position altcoin
+    ctx.translate(bx, by);
+
+    // Subtle rotation based on movement
+    let angle = Math.atan2(enemy.vy, enemy.vx);
+    ctx.rotate(angle + Math.PI / 2);
+
+    // Draw altcoin with image
+    const altcoinImg = altcoinImagesRef.current[enemy.visualType];
+    const fallbackColor = ALTCOIN_COLORS[enemy.visualType as keyof typeof ALTCOIN_COLORS] || COLOR_BITCOIN_PRIMARY;
+
+    if (altcoinImg && altcoinImg.complete) {
+      // Draw actual altcoin image with glow effect
+      ctx.shadowColor = fallbackColor;
+      ctx.shadowBlur = 10;
+      // Mirror the image in X plane to display correctly (since video is mirrored)
+      ctx.scale(-1, 1);
+      ctx.drawImage(altcoinImg, -bSize, -bSize, bSize * 2, bSize * 2);
+      ctx.shadowBlur = 0;
     } else {
-        ctx.translate(bx, by);
-        let angle = Math.atan2(enemy.vy, enemy.vx);
-        ctx.rotate(angle + Math.PI / 2);
-    }
-    
-    const anim = Math.sin(time * 0.15 + enemy.animationOffset);
+      // Fallback: Draw colored circle while image loads
+      ctx.shadowColor = fallbackColor;
+      ctx.shadowBlur = 15;
+      ctx.fillStyle = fallbackColor;
+      ctx.beginPath();
+      ctx.arc(0, 0, bSize * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
 
-    // Color code enemies in 2P mode to show who they are attacking (Subtle hint)
-    // Only if seeker.
-    let targetTint = '';
-    if (playerMode === '2p' && enemy.type === 'seeker') {
-       // P1 (Left) = Reddish tint check, P2 (Right) = Blueish tint check?
-       // Let's rely on trajectory mostly, but maybe eye color change
+      // Draw altcoin symbol as fallback
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${bSize * 1.2}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const symbols: { [key: string]: string } = {
+        'eth': 'Ξ', 'usdt': '₮', 'usdc': '$', 'bnb': 'BNB', 'sol': '◎',
+        'xrp': '✕', 'trx': 'TRX', 'doge': 'Ð', 'ada': '₳', 'steth': 'stETH',
+        'link': 'LINK', 'shib': 'SHIB', 'hbar': 'HBAR', 'dai': 'DAI',
+        'avax': 'AVAX', 'uni': 'UNI', 'aave': 'AAVE', 'comp': 'COMP',
+        'zec': 'ZEC', 'etc': 'ETC'
+      };
+      ctx.fillText(symbols[enemy.visualType] || enemy.visualType.toUpperCase(), 0, 0);
     }
 
-    // --- ZOMBIES ---
-    if (enemy.visualType.startsWith('zombie')) {
-       // Shoulders
-       ctx.fillStyle = COLOR_ZOMBIE_SHIRT;
-       ctx.beginPath();
-       ctx.roundRect(-bSize/2, -bSize/4, bSize, bSize/2, 5);
-       ctx.fill();
-       
-       // Head
-       ctx.fillStyle = COLOR_ZOMBIE_SKIN;
-       ctx.beginPath();
-       ctx.arc(0, -bSize/2, bSize/2.2, 0, Math.PI * 2);
-       ctx.fill();
-
-       // Eyes
-       ctx.fillStyle = COLOR_ZOMBIE_EYES;
-       ctx.beginPath();
-       ctx.arc(-bSize/5, -bSize/2, bSize/8, 0, Math.PI * 2);
-       ctx.arc(bSize/5, -bSize/2, bSize/8, 0, Math.PI * 2);
-       ctx.fill();
-
-       // Arms
-       ctx.strokeStyle = COLOR_ZOMBIE_SKIN;
-       ctx.lineWidth = bSize/6;
-       ctx.beginPath();
-       ctx.moveTo(-bSize/2, 0); ctx.lineTo(-bSize/1.5, bSize/2 + anim * 5);
-       ctx.moveTo(bSize/2, 0); ctx.lineTo(bSize/1.5, bSize/2 - anim * 5);
-       ctx.stroke();
-    }
-    // --- SPIDERS ---
-    else if (enemy.visualType.startsWith('spider')) {
-       // Draw web behind spider (only when near top of screen)
-       if (enemy.y < 0.3) {
-           ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-           ctx.lineWidth = 1;
-           ctx.beginPath();
-           ctx.moveTo(0, 0);
-           ctx.lineTo(0, 1000);
-           ctx.stroke();
-       }
-       ctx.strokeStyle = COLOR_SPIDER_LEGS;
-       ctx.lineWidth = 2;
-       for (let i = 0; i < 4; i++) {
-          const legWiggle = Math.sin(time * 0.3 + i) * (bSize/3);
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.lineTo(-bSize, (i - 1.5) * (bSize/2) + legWiggle);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.lineTo(bSize, (i - 1.5) * (bSize/2) - legWiggle);
-          ctx.stroke();
-       }
-       ctx.fillStyle = COLOR_SPIDER_BODY;
-       ctx.beginPath();
-       ctx.ellipse(0, 0, bSize/2, bSize/1.5, 0, 0, Math.PI * 2);
-       ctx.fill();
-       ctx.fillStyle = COLOR_SPIDER_EYES;
-       ctx.beginPath();
-       ctx.arc(-bSize/5, -bSize/2, bSize/10, 0, Math.PI * 2);
-       ctx.arc(bSize/5, -bSize/2, bSize/10, 0, Math.PI * 2);
-       ctx.fill();
-    }
-    // --- BUGS (Default) ---
-    else {
-        if (enemy.visualType === 'wasp') {
-            ctx.fillStyle = COLOR_BUG_WING;
-            ctx.beginPath();
-            ctx.ellipse(bSize/2, 0, bSize/1.2, bSize/4, Math.PI/4 + 0.5 * anim, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(-bSize/2, 0, bSize/1.2, bSize/4, -Math.PI/4 - 0.5 * anim, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = COLOR_BUG_WASP;
-            ctx.beginPath();
-            ctx.ellipse(0, 0, bSize/2.5, bSize/1.5, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = COLOR_BUG_WASP_STRIPE;
-            ctx.lineWidth = bSize / 8;
-            ctx.beginPath();
-            ctx.moveTo(-bSize/3, -bSize/4); ctx.lineTo(bSize/3, -bSize/4);
-            ctx.moveTo(-bSize/3, 0); ctx.lineTo(bSize/3, 0);
-            ctx.moveTo(-bSize/3, bSize/4); ctx.lineTo(bSize/3, bSize/4);
-            ctx.stroke();
-            ctx.fillStyle = '#000';
-            ctx.beginPath();
-            ctx.arc(0, -bSize/1.5, bSize/4, 0, Math.PI * 2);
-            ctx.fill();
-        } 
-        else if (enemy.visualType === 'fly') {
-            ctx.fillStyle = COLOR_BUG_WING;
-            ctx.beginPath();
-            ctx.ellipse(bSize/2, -bSize/4, bSize/1.5, bSize/2.5, 0.8 * anim, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(-bSize/2, -bSize/4, bSize/1.5, bSize/2.5, -0.8 * anim, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = COLOR_BUG_FLY;
-            ctx.beginPath();
-            ctx.arc(0, 0, bSize/2.5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#991b1b';
-            ctx.beginPath();
-            ctx.arc(-bSize/5, -bSize/3, bSize/6, 0, Math.PI * 2);
-            ctx.arc(bSize/5, -bSize/3, bSize/6, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        else {
-            // Beetle
-            ctx.fillStyle = COLOR_BUG_WING;
-            ctx.beginPath();
-            ctx.ellipse(bSize/2, 0, bSize/1.5, bSize/3, Math.PI/6 + 0.3 * anim, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(-bSize/2, 0, bSize/1.5, bSize/3, -Math.PI/6 - 0.3 * anim, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = COLOR_BUG_BEETLE;
-            ctx.beginPath();
-            ctx.arc(0, 0, bSize/2.2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, -bSize/3); ctx.lineTo(0, bSize/2);
-            ctx.stroke();
-            ctx.fillStyle = '#000';
-            ctx.beginPath();
-            ctx.arc(0, -bSize/1.8, bSize/5, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
     ctx.restore();
   };
 
@@ -481,21 +370,55 @@ export const GameEngine: React.FC<GameEngineProps> = ({
       const size = p.size * w;
       const pulse = 1 + Math.sin(time * 0.005) * 0.1;
 
-      ctx.shadowColor = COLOR_POWERUP_ORB;
-      ctx.shadowBlur = 20 * pulse;
-      ctx.fillStyle = COLOR_POWERUP_GLOW;
-      ctx.beginPath();
-      ctx.arc(x, y, size * 0.7 * pulse, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      if (p.type === 'bitcoin') {
+        // Draw Bitcoin logo from image
+        const bitcoinImg = altcoinImagesRef.current['bitcoin'];
 
-      ctx.fillStyle = COLOR_POWERUP_ORB;
-      ctx.beginPath();
-      ctx.arc(x, y, size * 0.4, 0, Math.PI * 2);
-      ctx.fill();
+        if (bitcoinImg && bitcoinImg.complete) {
+          // Draw actual Bitcoin logo with glow effect
+          ctx.shadowColor = COLOR_BITCOIN_ORB;
+          ctx.shadowBlur = 20 * pulse;
+          // Mirror the image in X plane to display correctly
+          ctx.save();
+          ctx.scale(-1, 1);
+          ctx.drawImage(bitcoinImg, -x - size, y - size, size * 2, size * 2);
+          ctx.restore();
+          ctx.shadowBlur = 0;
+        } else {
+          // Fallback: Draw glowing orange orb with Bitcoin symbol
+          ctx.shadowColor = COLOR_BITCOIN_ORB;
+          ctx.shadowBlur = 30 * pulse;
+          ctx.fillStyle = COLOR_BITCOIN_GLOW;
+          ctx.beginPath();
+          ctx.arc(x, y, size * 0.8 * pulse, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
 
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(x - size * 0.15, y - size * 0.15, size * 0.3, size * 0.3);
+          // Bitcoin symbol as fallback
+          ctx.fillStyle = COLOR_BITCOIN_ORB;
+          ctx.font = `bold ${size * 0.6}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('₿', x, y);
+        }
+      } else {
+        // Original bomb power-up
+        ctx.shadowColor = COLOR_POWERUP_ORB;
+        ctx.shadowBlur = 20 * pulse;
+        ctx.fillStyle = COLOR_POWERUP_GLOW;
+        ctx.beginPath();
+        ctx.arc(x, y, size * 0.7 * pulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = COLOR_POWERUP_ORB;
+        ctx.beginPath();
+        ctx.arc(x, y, size * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(x - size * 0.15, y - size * 0.15, size * 0.3, size * 0.3);
+      }
   };
 
   const updateAndDraw = useCallback((time: number) => {
@@ -530,6 +453,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     // 1. Detection
     const faceTargets: Point[] = [];
     const handTips: Point[] = [];
+    const mouthPositions: (Point | null)[] = [];
 
     if (status === GameStatus.PLAYING || status === GameStatus.CALIBRATING) {
       const faceResult = detectFace(video, time);
@@ -539,9 +463,14 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         // Mediapipe coordinates: x is 0 to 1 (left to right)
         // Sort by X coordinate
         faces.sort((a, b) => a.x - b.x);
-        
+
         faces.forEach(nose => {
             faceTargets.push({ x: nose.x, y: nose.y });
+        });
+
+        // Get mouth positions for Bitcoin eating
+        faceResult.faceLandmarks.forEach(landmarks => {
+          mouthPositions.push(getMouthPosition({ faceLandmarks: [landmarks] }));
         });
       }
 
@@ -569,6 +498,30 @@ export const GameEngine: React.FC<GameEngineProps> = ({
             ctx.shadowColor = COLOR_SWAT_ACTIVE;
             ctx.stroke();
             ctx.shadowBlur = 0;
+        });
+      }
+
+      // Draw Michael Saylor overlay on faces for Bitcoin theme
+      if (theme === 'bitcoin' && faceResult && michaelSaylorImageRef.current) {
+        faceResult.faceLandmarks.forEach((landmarks, faceIndex) => {
+          if (faceIndex >= faceTargets.length) return;
+
+          const nose = landmarks[1]; // Nose tip landmark
+          const leftEye = landmarks[33]; // Left eye landmark
+          const rightEye = landmarks[263]; // Right eye landmark
+
+          // Calculate face dimensions and position
+          const faceWidth = Math.abs(rightEye.x - leftEye.x) * w * 3; // Scale up for overlay
+          const faceHeight = faceWidth * 1.2; // Slightly taller than wide
+          const faceX = nose.x * w - faceWidth / 2;
+          const faceY = nose.y * h - faceHeight / 2;
+
+          // Draw Michael Saylor image overlay
+          ctx.save();
+          ctx.globalAlpha = 0.6; // Semi-transparent overlay
+          ctx.drawImage(michaelSaylorImageRef.current, faceX, faceY, faceWidth, faceHeight);
+          ctx.globalAlpha = 1.0;
+          ctx.restore();
         });
       }
     }
@@ -608,11 +561,14 @@ export const GameEngine: React.FC<GameEngineProps> = ({
           drawPowerUp(ctx, p, w, h, time);
 
           let hit = false;
-          for (const hand of handTips) {
-              const d = Math.sqrt(Math.pow(p.x - hand.x, 2) + Math.pow(p.y - hand.y, 2));
-              if (d < (p.size + SWAT_RADIUS)) {
-                  hit = true;
-                  break;
+          // Bitcoin can only be eaten with mouth, not shot with hands
+          if (p.type !== 'bitcoin') {
+              for (const hand of handTips) {
+                  const d = Math.sqrt(Math.pow(p.x - hand.x, 2) + Math.pow(p.y - hand.y, 2));
+                  if (d < (p.size + SWAT_RADIUS)) {
+                      hit = true;
+                      break;
+                  }
               }
           }
 
@@ -638,28 +594,51 @@ export const GameEngine: React.FC<GameEngineProps> = ({
           if (p.x > 1.2) powerUpsRef.current.splice(i, 1);
       }
 
+      // --- Bitcoin Eating (Mouth Detection) ---
+      if (theme === 'bitcoin') {
+        mouthPositions.forEach((mouth, mouthIndex) => {
+          if (!mouth) return;
+
+          for (let i = powerUpsRef.current.length - 1; i >= 0; i--) {
+            const p = powerUpsRef.current[i];
+            if (p.type !== 'bitcoin') continue;
+
+            const distToMouth = Math.sqrt(Math.pow(p.x - mouth.x, 2) + Math.pow(p.y - mouth.y, 2));
+            if (distToMouth < BITCOIN_EAT_RADIUS) {
+              // Player ate Bitcoin! Trigger hero sound and effects
+              playHeroSound();
+
+              // Massive score bonus and particle effect
+              scoreRef.current += 50; // Big points for eating Bitcoin
+              onScoreChange(scoreRef.current);
+
+              // Spawn lots of golden particles
+              spawnParticles(p.x, p.y, COLOR_BITCOIN_ORB, w, h, 15, 3);
+
+              // Heal player
+              if (mouthIndex < livesRef.current.length && livesRef.current[mouthIndex] < MAX_LIVES) {
+                livesRef.current[mouthIndex] = Math.min(MAX_LIVES, livesRef.current[mouthIndex] + 1);
+                onLivesChange([...livesRef.current]);
+              }
+
+              powerUpsRef.current.splice(i, 1);
+              break; // Only eat one Bitcoin per mouth per frame
+            }
+          }
+        });
+      }
+
       // --- Enemies ---
       for (let i = enemiesRef.current.length - 1; i >= 0; i--) {
         const enemy = enemiesRef.current[i];
         
         let moveX = enemy.vx;
         let moveY = enemy.vy;
-        
-        // MOVEMENT LOGIC
-        if (theme === 'spiders') {
-            const movePhase = Math.floor(time / 750) % 2;
-            if (Math.random() < 0.08) {
-                 moveX *= 4; moveY *= 4;
-            } else if (movePhase === 1 && Math.random() < 0.6) {
-                 moveX = 0; moveY = 0;
-            }
-        } else if (theme === 'zombies') {
-             // Steady plodding
-        } else {
-             const wobble = Math.sin(time * 0.005 + enemy.wobbleOffset) * 0.002;
-             moveX += (enemy.type === 'wanderer' ? wobble : 0);
-             moveY += (enemy.type === 'wanderer' ? wobble : 0);
-        }
+
+        // Altcoin movement - steady seeking
+        const wobble = Math.sin(time * 0.005 + enemy.wobbleOffset) * 0.001;
+        moveX += wobble;
+        moveY += wobble;
 
         enemy.x += moveX;
         enemy.y += moveY;
@@ -686,15 +665,9 @@ export const GameEngine: React.FC<GameEngineProps> = ({
              onScoreChange(scoreRef.current);
              playBlastSound();
 
-             let pColor = '#fff';
-             if (theme === 'bugs') {
-                if (enemy.visualType === 'wasp') pColor = COLOR_BUG_WASP;
-                else if (enemy.visualType === 'fly') pColor = COLOR_BUG_FLY;
-                else pColor = COLOR_BUG_BEETLE;
-             } else if (theme === 'zombies') {
-                pColor = COLOR_ZOMBIE_SKIN;
-             } else if (theme === 'spiders') {
-                pColor = COLOR_SPIDER_EYES;
+             let pColor = COLOR_BITCOIN_PRIMARY;
+             if (enemy.visualType in ALTCOIN_COLORS) {
+                pColor = ALTCOIN_COLORS[enemy.visualType as keyof typeof ALTCOIN_COLORS];
              }
 
              spawnParticles(enemy.x, enemy.y, pColor, w, h);
