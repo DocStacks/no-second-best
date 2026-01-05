@@ -272,10 +272,10 @@ export default function App() {
 
       // Generate compelling share text
       const shareText = score > 500 
-        ? `🔥 INSANE ${score} POINTS! Can you beat me at this Bitcoin AR game? ${window.location.href}`
+        ? `🔥 INSANE ${score} POINTS! Can you beat me? ${window.location.href}`
         : score > 300
-        ? `Just scored ${score} defending Bitcoin! 💪 Think you can beat me? ${window.location.href}`
-        : `There is NO SECOND BEST! ₿ Scored ${score} points - your turn! ${window.location.href}`;
+        ? `I Just scored ${score} defending Bitcoin! 💪 Think you can beat me? ${window.location.href}`
+        : `There is NO SECOND BEST! ₿ I scored ${score} points - your turn! ${window.location.href}`;
 
       // On mobile, prefer Web Share API (works much better)
       if (isMobile && navigator.share) {
