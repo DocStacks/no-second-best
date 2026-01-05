@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GameEngine } from './components/GameEngine';
 import { GameStatus, EnemyTheme, PlayerMode } from './types';
 import { initializeVisionModels } from './services/visionService';
-import { Heart, Play, Loader2, Video, Pause, PlayCircle, User, RotateCcw, Copy, Check, Download } from 'lucide-react';
+import { Heart, Play, Loader2, Video, Pause, PlayCircle, User, RotateCcw, Copy, Check, Download, Share2 } from 'lucide-react';
 import { MAX_LIVES } from './constants';
 
 const GAME_OVER_CTAS = [
@@ -213,18 +213,50 @@ export default function App() {
 
     try {
       const blob = await generateCompositeBlob(screenshots[selectedScreenshotIdx]);
-      if (blob) {
-        // Prepare Clipboard Item
-        // We try to write both text and image. Support varies by browser.
+      if (!blob) {
+        throw new Error("Failed to generate image");
+      }
+
+      // Generate compelling share text
+      const shareText = score > 500 
+        ? `🔥 INSANE ${score} POINTS! Can you beat me at this Bitcoin AR game? ${window.location.href}`
+        : score > 300
+        ? `Just scored ${score} defending Bitcoin! 💪 Think you can beat me? ${window.location.href}`
+        : `There is NO SECOND BEST! ₿ Scored ${score} points - your turn! ${window.location.href}`;
+
+      // On mobile, prefer Web Share API (works much better)
+      if (isMobile && navigator.share) {
+        const file = new File([blob], `bitcoin-ar-${Date.now()}.png`, { type: 'image/png' });
+        
+        // Check if sharing files is supported
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: 'No Second Best - Bitcoin AR Game',
+            text: shareText,
+            files: [file]
+          });
+          setCopied(true);
+          setTimeout(() => setCopied(false), 5000);
+        } else {
+          // Share without file if file sharing not supported
+          await navigator.share({
+            title: 'No Second Best - Bitcoin AR Game',
+            text: shareText,
+            url: window.location.href
+          });
+          // Also download the image
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `bitcoin-ar-${Date.now()}.png`;
+          link.click();
+          URL.revokeObjectURL(link.href);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 5000);
+        }
+      } else {
+        // Desktop: Use clipboard
         const items: Record<string, Blob> = {};
         items['image/png'] = blob;
-        
-        // Generate compelling share text
-        const shareText = score > 500 
-          ? `🔥 INSANE ${score} POINTS! Can you beat me at this Bitcoin AR game? ${window.location.href}`
-          : score > 300
-          ? `Just scored ${score} defending Bitcoin! 💪 Think you can beat me? ${window.location.href}`
-          : `There is NO SECOND BEST! ₿ Scored ${score} points - your turn! ${window.location.href}`;
         
         const textBlob = new Blob([shareText], { type: 'text/plain' });
         items['text/plain'] = textBlob;
@@ -235,14 +267,19 @@ export default function App() {
         setTimeout(() => setCopied(false), 5000);
       }
     } catch (err) {
-      console.error("Clipboard write failed", err);
-      // Fallback: Just try to download it if clipboard fails
+      console.error("Share failed", err);
+      // Fallback: Download the image
       if (screenshots[selectedScreenshotIdx]) {
-         const link = document.createElement('a');
-         link.href = screenshots[selectedScreenshotIdx];
-         link.download = `bitcoin-ar-${Date.now()}.jpg`;
-         link.click();
-         alert("Could not copy to clipboard (browser restriction). Saved image instead!");
+        const blob = await generateCompositeBlob(screenshots[selectedScreenshotIdx]);
+        if (blob) {
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `bitcoin-ar-${Date.now()}.png`;
+          link.click();
+          URL.revokeObjectURL(link.href);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 5000);
+        }
       }
     } finally {
       setIsGenerating(false);
@@ -276,7 +313,7 @@ export default function App() {
       </header>
 
       {/* Main Game Container */}
-      <div className="relative w-full max-w-4xl min-h-[70vh] md:min-h-0 md:aspect-video bg-black rounded-xl shadow-2xl overflow-hidden ring-1 ring-slate-700">
+      <div className="relative w-full max-w-4xl aspect-[3/4] md:aspect-video bg-black rounded-xl shadow-2xl overflow-hidden ring-1 ring-slate-700">
         
         <GameEngine 
           status={status}
@@ -417,9 +454,9 @@ export default function App() {
 
             {/* Paused Overlay */}
             {status === GameStatus.PAUSED && (
-                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-20 pointer-events-auto p-4">
+                 <div className="fixed inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-50 pointer-events-auto p-4">
                     <h2 className="text-4xl md:text-6xl font-black text-white tracking-widest uppercase mb-6 md:mb-8">Paused</h2>
-                    <div className="flex flex-col md:flex-row gap-3 md:gap-4 w-full max-w-xs md:max-w-none">
+                    <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-center justify-center">
                         <button 
                             onClick={togglePause}
                             className="px-6 py-3 md:px-8 md:py-3 bg-white hover:bg-slate-200 text-slate-900 font-bold rounded-full transition-colors flex items-center justify-center gap-2 text-sm md:text-base"
@@ -438,131 +475,116 @@ export default function App() {
           </div>
         )}
 
-        {/* 5. Game Over with Enhanced Share Flow */}
-        {status === GameStatus.GAME_OVER && (
-          <div className="absolute inset-0 bg-slate-900 z-40 flex flex-col overflow-y-auto">
-            
-            {/* Top: Interactive Preview - Compact on mobile */}
-            <div className="shrink-0 relative bg-black flex items-center justify-center p-2 md:p-4">
-                <div className="relative w-full max-w-2xl aspect-video rounded-lg md:rounded-xl overflow-hidden shadow-2xl border border-slate-700">
-                    {/* The Base Image */}
-                    {screenshots.length > 0 && (
-                        <img 
-                            src={screenshots[selectedScreenshotIdx]} 
-                            className="w-full h-full object-cover" 
-                            alt="Game Over Screenshot"
-                        />
-                    )}
-                    
-                    {/* The Overlay (Mimics what is generated on the canvas) */}
-                    <div className="absolute inset-0 flex flex-col justify-between p-2 md:p-6">
-                         {/* Top gradient */}
-                         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-transparent pointer-events-none" />
-                         
-                         {/* Bottom gradient */}
-                         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent pointer-events-none" />
-                         
-                         {/* Top: CTA */}
-                         <div className="text-center pt-0.5 md:pt-2 relative z-10">
-                             <h2 className="text-xs md:text-2xl lg:text-3xl font-black text-orange-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] tracking-tight leading-tight px-1 md:px-2">
-                                 {ctaText}
-                             </h2>
-                         </div>
-
-                         {/* Bottom: Stats */}
-                         <div className="flex justify-between items-end relative z-10">
-                             <div className="drop-shadow-lg">
-                                 <p className="text-[8px] md:text-xs font-bold text-white/90 mb-0 md:mb-1">SCORE</p>
-                                 <p className="text-2xl md:text-5xl lg:text-6xl font-black text-orange-400 leading-none drop-shadow-[0_0_20px_rgba(249,115,22,0.6)]">{score}</p>
-                             </div>
-                             <div className="text-right drop-shadow-md">
-                                 <p className="text-[6px] md:text-[10px] text-white/60">Play at:</p>
-                                 <p className="text-[10px] md:text-sm font-bold text-white/95">{GAME_URL}</p>
-                             </div>
-                         </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Bottom: Controls & Gallery - Scrollable on mobile */}
-            <div className="flex-1 w-full bg-slate-800 border-t border-slate-700 p-3 md:p-6 flex flex-col gap-2 md:gap-5 shadow-2xl z-50 overflow-y-auto">
-                <div className="text-center shrink-0">
-                    <h2 className="text-2xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-600 italic mb-0.5 md:mb-1">GAME OVER</h2>
-                    <p className="text-slate-400 text-[10px] md:text-sm">Select your best moment</p>
-                    <div className="inline-flex items-center gap-1 px-2 py-0.5 md:px-3 md:py-1 bg-orange-500/10 border border-orange-500/20 rounded-full mt-1">
-                        <div className="w-1 h-1 md:w-1.5 md:h-1.5 bg-orange-400 rounded-full animate-pulse"></div>
-                        <span className="text-orange-400 text-[10px] md:text-xs font-semibold">Score: {score}</span>
-                    </div>
-                </div>
-
-                {/* Gallery - Horizontal scroll on mobile for space efficiency */}
-                <div className="flex gap-1.5 md:gap-2 overflow-x-auto md:grid md:grid-cols-3 max-w-md mx-auto w-full pb-1 md:pb-0 shrink-0">
-                    {screenshots.map((shot, idx) => (
-                        <button
-                            key={idx}
-                            onClick={() => setSelectedScreenshotIdx(idx)}
-                            className={`relative shrink-0 w-24 md:w-auto aspect-video rounded-md md:rounded-lg overflow-hidden border-2 transition-all ${selectedScreenshotIdx === idx ? 'border-orange-500 scale-105 shadow-orange-500/50 shadow-lg ring-2 ring-orange-500/20' : 'border-slate-600 opacity-60 hover:opacity-100 hover:border-slate-500'}`}
-                        >
-                            <img src={shot} className="w-full h-full object-cover" alt={`Shot ${idx}`} />
-                            {selectedScreenshotIdx === idx && (
-                                <div className="absolute inset-0 bg-orange-500/10 pointer-events-none"></div>
-                            )}
-                        </button>
-                    ))}
-                    {screenshots.length === 0 && (
-                         <div className="w-full text-center text-slate-500 text-[10px] md:text-xs py-2 md:py-4 italic">No screenshots captured</div>
-                    )}
-                </div>
-
-                {/* Share Prompt - Compact on mobile */}
-                {!copied && screenshots.length > 0 && (
-                    <div className="bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/20 rounded-md md:rounded-lg p-2 md:p-3 text-center max-w-md mx-auto w-full shrink-0">
-                        <p className="text-orange-300 text-[10px] md:text-xs font-semibold">📸 Share Your Victory!</p>
-                    </div>
-                )}
-
-                {/* Success Message */}
-                {copied && (
-                    <div className="bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/30 rounded-md md:rounded-lg p-2 md:p-3 text-center animate-in fade-in zoom-in duration-300 max-w-md mx-auto w-full shrink-0">
-                        <p className="text-emerald-300 text-[10px] md:text-xs font-semibold">✨ Ready to share!</p>
-                    </div>
-                )}
-
-                {/* Actions - Always visible */}
-                <div className="flex flex-col gap-2 md:gap-3 max-w-md mx-auto w-full mt-auto shrink-0">
-                    <button
-                        onClick={handleShare}
-                        disabled={screenshots.length === 0 || isGenerating}
-                        className={`w-full py-2.5 md:py-4 rounded-lg md:rounded-xl font-black text-sm md:text-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
-                            copied 
-                                ? 'bg-emerald-500/20 text-emerald-300 border-2 border-emerald-500/50' 
-                                : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg shadow-orange-500/25'
-                        }`}
-                    >
-                        {isGenerating ? (
-                            <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
-                        ) : copied ? (
-                            <>
-                                <Check className="w-4 h-4 md:w-5 md:h-5" /> Image Copied!
-                            </>
-                        ) : (
-                            <>
-                                <Copy className="w-4 h-4 md:w-5 md:h-5" /> SHARE RESULT
-                            </>
-                        )}
-                    </button>
-
-                    <button
-                        onClick={startGame}
-                        className="w-full py-2.5 md:py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 border border-slate-600 text-xs md:text-base"
-                    >
-                        <RotateCcw className="w-3.5 h-3.5 md:w-4 md:h-4" /> Play Again
-                    </button>
-                </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* 5. Game Over with Enhanced Share Flow - OUTSIDE game container for consistent layout */}
+      {status === GameStatus.GAME_OVER && (
+        <div className="fixed inset-0 bg-slate-900 z-50 flex flex-col">
+          
+          {/* Top: Interactive Preview - Flexible sizing */}
+          <div className="flex-1 min-h-0 relative bg-black flex items-center justify-center p-3 md:p-6">
+              <div className="relative w-full h-full max-w-3xl max-h-full flex items-center justify-center">
+                  <div className="relative w-full aspect-video max-h-full rounded-lg md:rounded-xl overflow-hidden shadow-2xl border border-slate-700">
+                      {/* The Base Image */}
+                      {screenshots.length > 0 && (
+                          <img 
+                              src={screenshots[selectedScreenshotIdx]} 
+                              className="w-full h-full object-cover" 
+                              alt="Game Over Screenshot"
+                          />
+                      )}
+                      
+                      {/* The Overlay (Mimics what is generated on the canvas) */}
+                      <div className="absolute inset-0 flex flex-col justify-between p-3 md:p-6">
+                           {/* Top gradient */}
+                           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-transparent pointer-events-none" />
+                           
+                           {/* Bottom gradient */}
+                           <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent pointer-events-none" />
+                           
+                           {/* Top: CTA */}
+                           <div className="text-center pt-1 md:pt-2 relative z-10">
+                               <h2 className="text-sm md:text-2xl lg:text-3xl font-black text-orange-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] tracking-tight leading-tight px-2">
+                                   {ctaText}
+                               </h2>
+                           </div>
+
+                           {/* Bottom: Stats */}
+                           <div className="flex justify-between items-end relative z-10">
+                               <div className="drop-shadow-lg">
+                                   <p className="text-[10px] md:text-xs font-bold text-white/90 mb-0.5 md:mb-1">SCORE</p>
+                                   <p className="text-3xl md:text-5xl lg:text-6xl font-black text-orange-400 leading-none drop-shadow-[0_0_20px_rgba(249,115,22,0.6)]">{score}</p>
+                               </div>
+                               <div className="text-right drop-shadow-md">
+                                   <p className="text-[8px] md:text-[10px] text-white/60">Play at:</p>
+                                   <p className="text-xs md:text-sm font-bold text-white/95">{GAME_URL}</p>
+                               </div>
+                           </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          {/* Bottom: Controls & Gallery - Fixed height, never scrolls off screen */}
+          <div className="shrink-0 w-full bg-slate-800 border-t border-slate-700 p-3 md:p-5">
+              <div className="max-w-2xl mx-auto flex flex-col gap-3 md:gap-4">
+                  {/* Header */}
+                  <div className="text-center">
+                      <h2 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-600 italic">GAME OVER</h2>
+                      <p className="text-slate-400 text-xs md:text-sm mt-0.5">Select your best moment</p>
+                  </div>
+
+                  {/* Gallery - Horizontal scroll */}
+                  <div className="flex gap-2 overflow-x-auto pb-1 justify-center">
+                      {screenshots.map((shot, idx) => (
+                          <button
+                              key={idx}
+                              onClick={() => setSelectedScreenshotIdx(idx)}
+                              className={`relative shrink-0 w-20 md:w-28 aspect-video rounded-md md:rounded-lg overflow-hidden border-2 transition-all ${selectedScreenshotIdx === idx ? 'border-orange-500 scale-105 shadow-orange-500/50 shadow-lg' : 'border-slate-600 opacity-60 hover:opacity-100 hover:border-slate-500'}`}
+                          >
+                              <img src={shot} className="w-full h-full object-cover" alt={`Shot ${idx}`} />
+                          </button>
+                      ))}
+                      {screenshots.length === 0 && (
+                           <div className="text-slate-500 text-xs py-2 italic">No screenshots captured</div>
+                      )}
+                  </div>
+
+                  {/* Actions - Side by side on mobile for compactness */}
+                  <div className="flex gap-2 md:gap-3">
+                      <button
+                          onClick={handleShare}
+                          disabled={screenshots.length === 0 || isGenerating}
+                          className={`flex-1 py-3 md:py-4 rounded-lg md:rounded-xl font-black text-sm md:text-base flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                              copied 
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-2 border-emerald-500/50' 
+                                  : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg shadow-orange-500/25'
+                          }`}
+                      >
+                          {isGenerating ? (
+                              <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
+                          ) : copied ? (
+                              <>
+                                  <Check className="w-4 h-4 md:w-5 md:h-5" /> {isMobile ? 'Done!' : 'Copied!'}
+                              </>
+                          ) : (
+                              <>
+                                  {isMobile ? <Share2 className="w-4 h-4 md:w-5 md:h-5" /> : <Copy className="w-4 h-4 md:w-5 md:h-5" />} SHARE
+                              </>
+                          )}
+                      </button>
+
+                      <button
+                          onClick={startGame}
+                          className="flex-1 py-3 md:py-4 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg md:rounded-xl transition-all flex items-center justify-center gap-2 border border-slate-600 text-sm md:text-base"
+                      >
+                          <RotateCcw className="w-4 h-4 md:w-5 md:h-5" /> PLAY AGAIN
+                      </button>
+                  </div>
+              </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer Info */}
       {status === GameStatus.LANDING && (

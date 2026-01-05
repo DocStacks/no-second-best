@@ -62,12 +62,21 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     const startCamera = async () => {
       if (videoRef.current) {
         try {
+          // Detect if mobile device
+          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+          
+          // On mobile, don't constrain dimensions - let camera use native orientation (portrait)
+          // On desktop, prefer landscape dimensions
+          const videoConstraints: MediaTrackConstraints = isMobile
+            ? { facingMode: "user" }
+            : {
+                width: { ideal: VIDEO_WIDTH },
+                height: { ideal: VIDEO_HEIGHT },
+                facingMode: "user"
+              };
+          
           const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              width: { ideal: VIDEO_WIDTH },
-              height: { ideal: VIDEO_HEIGHT },
-              facingMode: "user"
-            }
+            video: videoConstraints
           });
           videoRef.current.srcObject = stream;
           videoRef.current.addEventListener('loadeddata', () => {
@@ -834,7 +843,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
   }, [updateAndDraw]);
 
   return (
-    <div className="relative w-full max-w-4xl aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-700">
+    <div className="absolute inset-0 w-full h-full bg-black">
       <div className="absolute inset-0 w-full h-full mirror-x">
          <video 
            ref={videoRef}
