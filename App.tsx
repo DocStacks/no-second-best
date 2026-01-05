@@ -19,7 +19,7 @@ const GAME_URL = window.location.host; // Dynamically get the current URL
 export default function App() {
   const [status, setStatus] = useState<GameStatus>(GameStatus.LANDING);
   const theme: EnemyTheme = 'bitcoin';
-  const playerMode: PlayerMode = '1p';
+  const [playerMode] = useState<PlayerMode>('1p');
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState<number[]>([MAX_LIVES]);
   const [highScore, setHighScore] = useState(0);
@@ -119,7 +119,10 @@ export default function App() {
 
   const startGame = useCallback(() => {
     setScore(0);
-    setLives(playerMode === '2p' ? [MAX_LIVES, MAX_LIVES] : [MAX_LIVES]);
+    setLives(playerMode === '2p' 
+      ? [MAX_LIVES, MAX_LIVES] 
+      : [MAX_LIVES]
+    );
     setStatus(GameStatus.PLAYING);
     setScreenshots([]);
     setSelectedScreenshotIdx(0);
