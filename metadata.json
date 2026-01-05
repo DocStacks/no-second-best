@@ -1,0 +1,7 @@
+{
+  "name": "AR Shooter",
+  "description": "A webcam-controlled AR game where you swat flying bugs/spiders/zombies to protect your face.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
