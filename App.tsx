@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GameEngine } from './components/GameEngine';
 import { GameStatus, EnemyTheme, PlayerMode } from './types';
 import { initializeVisionModels } from './services/visionService';
+import { unlockAudio } from './services/audioService';
 import { Heart, Play, Loader2, Video, Pause, PlayCircle, User, RotateCcw, Copy, Check, Download, Share2 } from 'lucide-react';
 import { MAX_LIVES } from './constants';
 
@@ -49,7 +50,34 @@ export default function App() {
     if (stored) setHighScore(parseInt(stored, 10));
   }, []);
 
+  // Auto-pause when user leaves the page/tab (Page Visibility API)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && status === GameStatus.PLAYING) {
+        setStatus(GameStatus.PAUSED);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Also handle window blur (when user switches apps on mobile)
+    const handleBlur = () => {
+      if (status === GameStatus.PLAYING) {
+        setStatus(GameStatus.PAUSED);
+      }
+    };
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [status]);
+
   const handleStartRequest = async () => {
+    // Unlock audio on user gesture (required for mobile)
+    await unlockAudio();
+    
     setStatus(GameStatus.LOADING_MODELS);
     const modelsLoaded = await initializeVisionModels();
     if (modelsLoaded) {

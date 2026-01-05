@@ -2,6 +2,7 @@
 
 let audioCtx: AudioContext | null = null;
 let isMuted = false;
+let isUnlocked = false;
 
 // Scheduling state
 let nextNoteTime = 0.0;
@@ -26,6 +27,47 @@ const initAudio = () => {
     audioCtx.resume();
   }
   return audioCtx;
+};
+
+/**
+ * MUST be called from a user gesture (click/touch) on mobile to unlock audio.
+ * This plays a silent buffer which unlocks the AudioContext on iOS/Android.
+ */
+export const unlockAudio = async (): Promise<boolean> => {
+  if (isUnlocked) return true;
+  
+  try {
+    const ctx = initAudio();
+    if (!ctx) return false;
+    
+    // Resume if suspended (required on mobile)
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+    
+    // Play a silent buffer to fully unlock on iOS
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+    
+    // Also play a tiny oscillator (helps on some Android devices)
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    gain.gain.value = 0.001; // Nearly silent
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.001);
+    
+    isUnlocked = true;
+    console.log('Audio unlocked successfully');
+    return true;
+  } catch (e) {
+    console.error('Failed to unlock audio:', e);
+    return false;
+  }
 };
 
 // --- Scheduler Logic ---
