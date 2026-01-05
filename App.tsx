@@ -50,11 +50,24 @@ export default function App() {
     if (stored) setHighScore(parseInt(stored, 10));
   }, []);
 
-  // Auto-pause when user leaves the page/tab (Page Visibility API)
+  // Game over when user leaves the page/tab (Page Visibility API)
+  // This encourages sharing their score before leaving
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && status === GameStatus.PLAYING) {
-        setStatus(GameStatus.PAUSED);
+        // Trigger game over instead of pause - encourages sharing
+        setStatus(GameStatus.GAME_OVER);
+        // Pick random CTA
+        const randomCta = GAME_OVER_CTAS[Math.floor(Math.random() * GAME_OVER_CTAS.length)];
+        setCtaText(randomCta);
+        // Update high score if needed
+        setHighScore(prev => {
+          if (score > prev) {
+            localStorage.setItem('bitcoin-ar-highscore', score.toString());
+            return score;
+          }
+          return prev;
+        });
       }
     };
 
@@ -63,7 +76,19 @@ export default function App() {
     // Also handle window blur (when user switches apps on mobile)
     const handleBlur = () => {
       if (status === GameStatus.PLAYING) {
-        setStatus(GameStatus.PAUSED);
+        // Trigger game over instead of pause - encourages sharing
+        setStatus(GameStatus.GAME_OVER);
+        // Pick random CTA
+        const randomCta = GAME_OVER_CTAS[Math.floor(Math.random() * GAME_OVER_CTAS.length)];
+        setCtaText(randomCta);
+        // Update high score if needed
+        setHighScore(prev => {
+          if (score > prev) {
+            localStorage.setItem('bitcoin-ar-highscore', score.toString());
+            return score;
+          }
+          return prev;
+        });
       }
     };
     window.addEventListener('blur', handleBlur);
@@ -72,7 +97,7 @@ export default function App() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleBlur);
     };
-  }, [status]);
+  }, [status, score]);
 
   const handleStartRequest = async () => {
     // Unlock audio on user gesture (required for mobile)
@@ -382,6 +407,9 @@ export default function App() {
                    <p className="text-blue-300 text-[10px] font-semibold mb-0.5">📱 Mobile Setup</p>
                    <p className="text-slate-300 text-[10px] leading-tight">
                      <strong className="text-white">Set phone down</strong> at eye level, step back 2-3 feet!
+                   </p>
+                   <p className="text-amber-300 text-[10px] leading-tight mt-1">
+                     🎧 <strong className="text-amber-200">Headphones on / volume up</strong> for full effect!
                    </p>
                  </div>
                )}
