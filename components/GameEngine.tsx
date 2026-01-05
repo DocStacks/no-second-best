@@ -56,6 +56,14 @@ export const GameEngine: React.FC<GameEngineProps> = ({
   const lastFaceResultRef = useRef<any>(null); // Store last face detection result for screenshots
   const exitIntentTriggeredRef = useRef<boolean>(false); // Track if exit intent was already triggered
   const hasMouseMovedRef = useRef<boolean>(false); // Track if user has moved mouse at all
+  
+  // Hand tracking state for no-hands detection
+  const handsEverDetectedRef = useRef<boolean>(false); // Track if hands have ever been shown
+  const lastHandDetectedTimeRef = useRef<number>(0); // Last time hands were detected
+  const noHandsGameOverTriggeredRef = useRef<boolean>(false); // Prevent multiple game overs
+  const previousStatusRef = useRef<GameStatus>(status); // Track previous status for pause/resume handling
+
+  const [showFingerGunPrompt, setShowFingerGunPrompt] = useState<boolean>(false);
 
   // Initialize Camera and preload Michael Saylor image
   useEffect(() => {
@@ -148,6 +156,18 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         // Reset exit intent tracking for new game
         exitIntentTriggeredRef.current = false;
         hasMouseMovedRef.current = false;
+        
+        // Reset hand tracking for new game
+        handsEverDetectedRef.current = false;
+        lastHandDetectedTimeRef.current = 0; // Will be set when hands are first detected
+        noHandsGameOverTriggeredRef.current = false;
+        setShowFingerGunPrompt(false);
+      } else if (previousStatusRef.current === GameStatus.PAUSED) {
+        // Resuming from pause - reset hand detection timer to prevent
+        // immediate game over due to pause duration being counted
+        if (handsEverDetectedRef.current) {
+          lastHandDetectedTimeRef.current = performance.now();
+        }
       }
       startMusic();
     } else if (status === GameStatus.GAME_OVER) {
@@ -156,6 +176,9 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     } else {
       stopMusic(); 
     }
+    
+    // Track previous status for next transition
+    previousStatusRef.current = status;
   }, [status, playerMode, onScoreChange, onLivesChange]);
 
   const captureScreenshot = useCallback((faceResult?: any) => {
@@ -581,7 +604,9 @@ export const GameEngine: React.FC<GameEngineProps> = ({
       }
 
       const handResult = detectHands(video, time);
-      if (handResult && handResult.landmarks.length > 0) {
+      const handsDetectedThisFrame = handResult && handResult.landmarks.length > 0;
+      
+      if (handsDetectedThisFrame) {
         handResult.landmarks.forEach(lm => {
             const indexTip = lm[8];
             handTips.push({ x: indexTip.x, y: indexTip.y });
@@ -605,6 +630,33 @@ export const GameEngine: React.FC<GameEngineProps> = ({
             ctx.stroke();
             ctx.shadowBlur = 0;
         });
+        
+        // Mark that hands have been detected and update last detection time
+        if (status === GameStatus.PLAYING) {
+          handsEverDetectedRef.current = true;
+          lastHandDetectedTimeRef.current = time;
+          setShowFingerGunPrompt(false); // Hide prompt when hands are shown
+        }
+      }
+      
+      // No-hands detection logic (only when playing)
+      if (status === GameStatus.PLAYING && !handsDetectedThisFrame) {
+        const timeSinceLastHand = time - lastHandDetectedTimeRef.current;
+        const timeSinceGameStart = time - gameStartTimeRef.current;
+        
+        if (!handsEverDetectedRef.current) {
+          // Hands have never been shown - after 3 seconds, show finger gun prompt
+          if (timeSinceGameStart > 3000) {
+            setShowFingerGunPrompt(true);
+          }
+        } else {
+          // Hands were shown before but now gone - trigger game over after brief grace period
+          if (timeSinceLastHand > 1500 && !noHandsGameOverTriggeredRef.current) {
+            noHandsGameOverTriggeredRef.current = true;
+            captureScreenshot(lastFaceResultRef.current);
+            onGameOver(scoreRef.current, screenshotsRef.current);
+          }
+        }
       }
 
       // Draw Michael Saylor overlay on faces for Bitcoin theme
@@ -857,6 +909,20 @@ export const GameEngine: React.FC<GameEngineProps> = ({
            className="absolute inset-0 w-full h-full object-cover"
          />
       </div>
+      
+      {/* Finger Gun Prompt */}
+      {showFingerGunPrompt && status === GameStatus.PLAYING && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+          <div className="bg-black/80 backdrop-blur-sm px-8 py-6 rounded-2xl border-2 border-orange-500 shadow-lg shadow-orange-500/30 animate-pulse">
+            <p className="text-white text-2xl md:text-3xl font-bold text-center">
+              👆 Use your finger guns! 🔫
+            </p>
+            <p className="text-orange-400 text-lg md:text-xl text-center mt-2">
+              Point at altcoins to destroy them
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
